@@ -7,7 +7,7 @@ import WaitingLoader from "../Loaders/WaitingLoader";
 import loginImage from "../Asset/images/loginImage.jpg";
 import logo from "../Asset/images/wxyz_logo.svg";
 
-import { IoMdEye, IoMdEyeOff } from "react-icons/io";
+
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ const LoginPage = () => {
       sessionStorage.setItem("user", JSON.stringify(res.data.data));
       navigate("/admin/dashboard");
       stopWaitingLoader();
-    } catch (err) {
+    } catch (err: any) {
       console.log(err.response.data);
       stopWaitingLoader();
       notifyError(err.response.data.responseMessage);

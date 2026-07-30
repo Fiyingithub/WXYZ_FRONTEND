@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { FormEvent, ChangeEvent } from 'react';
 import Sidebar from '../Sidebar'; 
 import axios from 'axios';
 import { useToast } from '../../Loaders/ToastContext';
@@ -24,7 +25,7 @@ function AddProduct() {
   const [imageModal, setImageModal] = useState(false)
   const [productId, setProductId] = useState('')
 
-  const addProduct = async (e) => {
+  const addProduct = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     startWaitingLoader()
 
@@ -53,10 +54,10 @@ function AddProduct() {
     }
   }
 
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState<File[]>([]);
   const uploadImages = async () => {
     startWaitingLoader()
-    const urlsArray = [];
+    const urlsArray: string[] = [];
     const uploadPromises = Array.from(images).map(async (file) => {
       const formData = new FormData();
       formData.append('file', file);
@@ -64,15 +65,10 @@ function AddProduct() {
       formData.append('cloud_name', 'dcm8uhxyn');
 
       try {
-        const res = await axios.post(
-          `https://api.cloudinary.com/v1_1/dcm8uhxyn/image/upload`, formData
-        );
+        const res = await axios.post(`https://api.cloudinary.com/v1_1/dcm8uhxyn/image/upload`, formData);
         urlsArray.push(res.data.secure_url);
-        // console.log(urlsArray);
-        stopWaitingLoader()
       } catch (error) {
         console.error('Error uploading image:', error);
-        stopWaitingLoader()
       }
     });
 
@@ -89,15 +85,15 @@ function AddProduct() {
       setImages([])
       stopWaitingLoader()
     } catch(err){
-      // console.log(err.response)
-      notifyError(err.response.data.responseMessage)
+      notifyError((err as any)?.response?.data?.responseMessage || 'Error uploading images')
       stopWaitingLoader()
     }
   };
 
-  const handleFilesChange = (event) => {
+  const handleFilesChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    setImages(files);
+    if (!files) return;
+    setImages(Array.from(files));
   };
 
   return (

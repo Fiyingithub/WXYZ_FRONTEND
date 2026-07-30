@@ -1,8 +1,8 @@
-import React from 'react';
 import Chart from 'react-apexcharts';
+import type { ApexOptions } from 'apexcharts';
 
 const BudgetCard = () => {
-  const options = {
+  const options: ApexOptions = {
     chart: {
       type: 'donut',
     },

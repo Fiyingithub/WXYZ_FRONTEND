@@ -6,7 +6,7 @@ import NavbarDashboard from '../NavbarDashboard';
 
 function ViewProducts() {
   const navigate = useNavigate();
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [viewModal, setViewModal] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const toggleSidebar = () => {
@@ -14,7 +14,7 @@ function ViewProducts() {
   };
 
   // Sort from new to old
-  const sortedProducts = products.sort((a: number, b: number) => new Date(b.dateAdded) - new Date(a.dateAdded));
+  const sortedProducts = [...products].sort((a: any, b: any) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
 
   useEffect(() => {
     const getAllProducts = async () => {
@@ -30,11 +30,11 @@ function ViewProducts() {
   }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const findProductsByName = (products, searchQuery) => {
-    if(!searchQuery) return;
+  const findProductsByName = (products: any[], searchQuery: string) => {
+    if (!searchQuery) return products;
     const lowerCaseQuery = searchQuery.toLowerCase();
-    const result = products.filter(product => product.name.toLowerCase().includes(lowerCaseQuery));
-    return result || null;
+    const result = products.filter((product: any) => product.name.toLowerCase().includes(lowerCaseQuery));
+    return result;
   }
 
   return (

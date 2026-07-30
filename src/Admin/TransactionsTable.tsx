@@ -16,14 +16,14 @@ const TransactionsTable = () => {
 
   return (
     <Box sx={{ bgcolor: 'white', p: 4, width: '100%', boxShadow: 3, borderRadius: 2, border: 1, borderColor: 'grey.200' }}>
-      <Box display="flex" justifyContent="center" alignItems="center" mb={3}>
-        <Typography variant="h6" fontWeight="bold" fontStyle="italic">Recent Transactions</Typography>
-        <Box ml={2} display="flex" gap={2}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', fontStyle: 'italic' }}>Recent Transactions</Typography>
+        <Box sx={{ ml: 2, display: 'flex', gap: 2 }}>
           <FormControl variant="outlined" size="small">
             <InputLabel>Account</InputLabel>
             <Select
               value={account}
-              onChange={(e) => setAccount(e.target.value)}
+              onChange={(e) => setAccount(e.target.value as string)}
               label="Account"
             >
               <MenuItem value="All accounts">All accounts</MenuItem>
@@ -35,7 +35,7 @@ const TransactionsTable = () => {
             <InputLabel>View</InputLabel>
             <Select
               value={view}
-              onChange={(e) => setView(e.target.value)}
+              onChange={(e) => setView(e.target.value as string)}
               label="View"
             >
               <MenuItem value="See all">See all</MenuItem>

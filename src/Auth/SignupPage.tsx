@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useToast } from "../Loaders/ToastContext";
@@ -8,7 +8,7 @@ import signupImage from "../Asset/images/signupImage.jpg";
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { notifySuccess, notifyError, startWaitingLoader, stopWaitingLoader } =
+  const { notifySuccess, startWaitingLoader, stopWaitingLoader } =
     useToast();
   const [showPassword, setShowPassword] = useState(false);
   // const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -40,7 +40,7 @@ const SignupPage = () => {
     } catch (error) {
       console.log(error);
       stopWaitingLoader();
-      notifyError(error.response.data.responseMessage);
+      // notifyError(error.response.data.responseMessage);
     }
   };
 

@@ -23,6 +23,8 @@ const AllCategories = () => {
 
   const [allProducts, setAllProducts] = useState<Product[]>([]);
 
+  console.log(allProducts)
+
   useEffect(() => {
     const getAllProducts = async () => {
       try {

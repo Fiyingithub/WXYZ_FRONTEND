@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Chart from 'react-apexcharts';
+import type { ApexOptions } from 'apexcharts';
 
 
 
@@ -26,7 +27,7 @@ const MoneyFlow = () => {
     { name: 'Expenses', data: dataByYear[selectedYear].expenses },
   ]);
 
-  const options = {
+  const options: ApexOptions = {
     chart: {
       type: 'bar',
       height: 350,
@@ -40,7 +41,6 @@ const MoneyFlow = () => {
       bar: {
         horizontal: false,
         columnWidth: '50%',
-        endingShape: 'rounded',
       },
     },
     dataLabels: {

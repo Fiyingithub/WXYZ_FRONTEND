@@ -87,6 +87,7 @@ const AllProducts: React.FC = () => {
   const { addToCart } = useToast();
 
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  console.log(allProducts);
   const [loading, setLoading] = useState<boolean>(true);
   const [addToCartAlertModal, setAddToCartAlertModal] =
     useState<boolean>(false);

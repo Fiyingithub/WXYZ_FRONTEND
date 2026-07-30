@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Sidebar from '../Sidebar';
 import NavbarDashboard from '../NavbarDashboard';
@@ -11,13 +11,13 @@ const ProductInventory = () => {
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
-    const product = location.state
+    const product: any = location.state;
     console.log(product)
-    const images = product.imageUrl !== null && product.imageUrl !== undefined ? product.imageUrl.split(",") : 'null'
+    const images: string[] = product?.imageUrl ? product.imageUrl.split(",") : [];
     console.log(images)
     return (
         <div className='flex'>
-            <Sidebar />
+            <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
             <div className='w-full'>
                 <div className='sticky top-0 z-50'>

@@ -136,7 +136,7 @@ const Sidebar = ({isSidebarOpen, toggleSidebar}: SidebarProps) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-grow p-4">
+        <nav className="grow p-4">
           <ul className="space-y-2">
             {/* Dashboard */}
             <li>

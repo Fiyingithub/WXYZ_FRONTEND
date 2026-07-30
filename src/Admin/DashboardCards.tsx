@@ -1,5 +1,3 @@
-import React from 'react';
-
 const DashboardCards = () => {
   const data = [
     { title: 'Total Balance', amount: '₦15,000', bgColor: 'bg-blue-500', icon: '💰' },
