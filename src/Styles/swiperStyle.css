@@ -1,0 +1,49 @@
+#app {
+  height: 100%;
+}
+html,
+body {
+  position: relative;
+  height: 100%;
+}
+
+.swiper {
+  width: 100%;
+  height: 100%;
+}
+
+.swiper-slide {
+  font-size: 18px;
+  background: white;
+  margin: 8px;
+  text-align: left;
+}
+
+.swiper-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.swiper {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Hide navigation buttons by default */
+.swiper-button-prev,
+.swiper-button-next {
+  display: none;
+}
+
+/* Show buttons on hover */
+.mySwiper:hover .swiper-button-prev,
+.mySwiper:hover .swiper-button-next {
+  display: block;
+}
+
+/* Customize the buttons if needed */
+.swiper-button-next {
+  color: black !important;
+}
