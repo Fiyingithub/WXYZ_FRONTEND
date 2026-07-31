@@ -6,8 +6,8 @@ import Footer from '../../Components/Footer';
 import Categories from './Categories';
 import FeaturedProduct from './FeaturedProduct';
 
-import heroVideoDesktop from '../../Asset/Video/lv_0_20260622220339.mp4';
-import heroVideoMobile from '../../Asset/video/lv_0_20260622220203.mp4';
+import heroVideoDesktop from '../../Asset/Video/wxyz_web_video.mp4';
+import heroVideoMobile from '../../Asset/Video/wxyz_mobile_video.mp4';
 import AllProducts from './AllProducts';
 
 function LandingPage() {
