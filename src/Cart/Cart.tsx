@@ -138,8 +138,8 @@ const Cart = () => {
         <Navbar />
       </div>
 
-      <div className="rounded-md mx-auto max-w-[1100px] pt-10 flex flex-col lg:flex-row justify-between pb-10">
-        <div className="border border-[#ce5733] rounded-lg lg:w-[700px] p-4">
+      <div className="rounded-md mx-auto max-w-275 pt-10 flex flex-col lg:flex-row justify-between pb-10">
+        <div className="border border-[#ce5733] rounded-lg lg:w-175 p-4">
           <h2 className="text-xl font-bold mb-4">Shopping Cart</h2>
           <table className="w-full">
             <thead>
@@ -227,7 +227,7 @@ const Cart = () => {
           </table>
         </div>
 
-        <div className="border border-[#ce5733] rounded-lg lg:w-[350px] h-[230px] p-4 my-4 lg:my-0">
+        <div className="border border-[#ce5733] rounded-lg lg:w-87.5 h-57.5 p-4 my-4 lg:my-0">
           <div className="space-y-4">
             <div className="border-b space-y-4 my-4">
               <div className="flex justify-between">
