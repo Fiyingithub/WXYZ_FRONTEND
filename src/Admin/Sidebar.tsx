@@ -3,7 +3,7 @@ import {
   FaTachometerAlt,
   FaExchangeAlt,
   FaMoneyBillWave,
-  FaCog,
+  FaUserCircle,
   FaSignOutAlt,
   FaSun,
   FaMoon,
@@ -18,7 +18,11 @@ interface SidebarProps {
   closeSidebar?: () => void;
 }
 
-const Sidebar = ({ isSidebarOpen, toggleSidebar, closeSidebar }: SidebarProps) => {
+const Sidebar = ({
+  isSidebarOpen,
+  toggleSidebar,
+  closeSidebar,
+}: SidebarProps) => {
   const location = useLocation();
   const handleClose = closeSidebar ?? toggleSidebar;
 
@@ -28,7 +32,9 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, closeSidebar }: SidebarProps) =
     <div>
       <div
         className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 lg:hidden ${
-          isSidebarOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+          isSidebarOpen
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
         }`}
         onClick={handleClose}
       />
@@ -48,7 +54,11 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, closeSidebar }: SidebarProps) =
         </button>
 
         <div className="flex items-center space-x-3 border-b border-gray-700 p-4">
-          <img src={logo} alt="Logo" className="h-10 w-10 rounded-full bg-white p-1" />
+          <img
+            src={logo}
+            alt="Logo"
+            className="h-10 w-10 rounded-full bg-white p-1"
+          />
           <span className="text-lg font-semibold">ADMIN PANEL</span>
         </div>
 
@@ -65,6 +75,20 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, closeSidebar }: SidebarProps) =
                 }`}
               >
                 <FaTachometerAlt className="mr-3" /> Dashboard
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/admin/dashboard/profile"
+                onClick={handleClose}
+                className={`flex items-center rounded-lg p-2 transition-colors hover:bg-gray-700 ${
+                  isActive("/admin/dashboard/profile")
+                    ? "bg-white/20 font-semibold ring-1 ring-white/30"
+                    : ""
+                }`}
+              >
+                <FaUserCircle className="mr-3" /> Profile
               </Link>
             </li>
 
@@ -94,11 +118,6 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, closeSidebar }: SidebarProps) =
               >
                 <FaMoneyBillWave className="mr-3" /> Orders
               </Link>
-            </li>
-
-            <li className="flex items-center rounded-lg p-2 transition-colors hover:bg-gray-700">
-              <FaCog className="mr-3" />
-              <span>Settings</span>
             </li>
           </ul>
         </nav>

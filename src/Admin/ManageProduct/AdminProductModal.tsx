@@ -3,6 +3,7 @@ import { FaImage, FaTimes, FaPlus } from "react-icons/fa";
 import type { Product, PublishStatus } from "./AdminProduct";
 import type { Category } from "../../Components/CategorySelect ";
 import CategorySelect from "../../Components/CategorySelect ";
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 export interface ProductFormValues {
   name: string;
@@ -21,11 +22,11 @@ export interface ProductFormValues {
 interface AdminProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (values: ProductFormValues, publishStatus: PublishStatus) => void;
+  onSubmit: (values: ProductFormValues, publishStatus: PublishStatus) => Promise<void>;
   onDelete?: () => void;
   editingProduct: Product | null;
   categories: Category[];
-  onAddCategory: (name: string) => void;
+  onAddCategory: (formData: FormData) => Promise<void> | void;
   onDeleteCategory: (id: string) => void;
   maxImages?: number;
 }
@@ -48,7 +49,6 @@ const AdminProductModal = ({
   isOpen,
   onClose,
   onSubmit,
-  onDelete,
   editingProduct,
   categories,
   onAddCategory,
@@ -58,6 +58,13 @@ const AdminProductModal = ({
   const [form, setForm] = useState<ProductFormValues>(emptyForm);
   const [previews, setPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // State for category deletion
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+  
+  // State for product submission loading
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (editingProduct) {
@@ -79,7 +86,7 @@ const AdminProductModal = ({
     }
   }, [editingProduct, isOpen]);
 
-  // Build/clean up object URLs whenever the selected files change
+  // Build/clean up object URLs whenever the selected files are selected
   useEffect(() => {
     const urls = form.imageFiles.map((file) => URL.createObjectURL(file));
     setPreviews(urls);
@@ -89,10 +96,10 @@ const AdminProductModal = ({
   }, [form.imageFiles]);
 
   const handleClose = () => {
-    onClose();
+    if (!isSubmitting) {
+      onClose();
+    }
   };
-
-
 
   const openFilePicker = () => {
     fileInputRef.current?.click();
@@ -131,13 +138,47 @@ const AdminProductModal = ({
 
   const isValid = form.name.trim() && form.categoryId && form.price > 0;
 
-  const handleSave = (status: PublishStatus) => {
-    if (!isValid) return;
-    onSubmit(form, status);
+  const handleSave = async (status: PublishStatus) => {
+    if (!isValid || isSubmitting) return;
+    
+    console.log("handleSave called with status:", status); // Debug log
+    
+    setIsSubmitting(true);
+    try {
+      await onSubmit(form, status);
+      // Modal will be closed by parent after successful submission
+      console.log("Product saved successfully"); // Debug log
+    } catch (error) {
+      // Error handling is done in parent
+      console.error("Error saving product:", error);
+    } finally {
+      setIsSubmitting(false);
+      console.log("isSubmitting set to false"); // Debug log
+    }
   };
 
   const totalTiles = form.existingImages.length + form.imageFiles.length;
   const canAddMore = totalTiles < maxImages;
+
+  // Handle category delete confirmation
+  const handleCategoryDeleteClick = (categoryId: string) => {
+    const category = categories.find((c) => c.id === categoryId);
+    if (!category) return;
+    setCategoryToDelete(category);
+  };
+
+  const handleConfirmCategoryDelete = () => {
+    if (!categoryToDelete) return;
+    setIsDeletingCategory(true);
+    // Call the delete function
+    onDeleteCategory(categoryToDelete.id);
+    setIsDeletingCategory(false);
+    setCategoryToDelete(null);
+  };
+
+  const handleCancelCategoryDelete = () => {
+    setCategoryToDelete(null);
+  };
 
   return (
     <>
@@ -162,7 +203,8 @@ const AdminProductModal = ({
           </div>
           <button
             onClick={handleClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors shrink-0"
+            disabled={isSubmitting}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FaTimes />
           </button>
@@ -175,7 +217,8 @@ const AdminProductModal = ({
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               placeholder="e.g. Classic Leather Strap Wristwatch"
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f2592b]/40 focus:border-[#f2592b]"
+              disabled={isSubmitting}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f2592b]/40 focus:border-[#f2592b] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -184,9 +227,9 @@ const AdminProductModal = ({
             <CategorySelect
               categories={categories}
               value={form.categoryId}
-              onChange={(id: any) => setForm((prev) => ({ ...prev, categoryId: id }))}
+              onChange={(id: string) => setForm((prev) => ({ ...prev, categoryId: id }))}
               onAddCategory={onAddCategory}
-              onDeleteCategory={onDeleteCategory}
+              onDeleteCategory={handleCategoryDeleteClick}
             />
           </div>
 
@@ -200,7 +243,8 @@ const AdminProductModal = ({
                 value={form.price || ""}
                 onChange={(e) => setForm((prev) => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                 placeholder="0.00"
-                className="w-full rounded-xl border border-gray-200 pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f2592b]/40 focus:border-[#f2592b]"
+                disabled={isSubmitting}
+                className="w-full rounded-xl border border-gray-200 pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f2592b]/40 focus:border-[#f2592b] disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -215,7 +259,8 @@ const AdminProductModal = ({
                 value={form.quantity || ""}
                 onChange={(e) => setForm((prev) => ({ ...prev, quantity: parseInt(e.target.value, 10) || 0 }))}
                 placeholder="100"
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f2592b]/40 focus:border-[#f2592b]"
+                disabled={isSubmitting}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f2592b]/40 focus:border-[#f2592b] disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -228,7 +273,8 @@ const AdminProductModal = ({
                   setForm((prev) => ({ ...prev, weight: e.target.value ? parseFloat(e.target.value) : undefined }))
                 }
                 placeholder="Enter weight"
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f2592b]/40 focus:border-[#f2592b]"
+                disabled={isSubmitting}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f2592b]/40 focus:border-[#f2592b] disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -240,7 +286,8 @@ const AdminProductModal = ({
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="Describe the product..."
               rows={3}
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#f2592b]/40 focus:border-[#f2592b]"
+              disabled={isSubmitting}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#f2592b]/40 focus:border-[#f2592b] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -258,6 +305,7 @@ const AdminProductModal = ({
               multiple
               className="hidden"
               onChange={(e) => handleFilesSelected(e.target.files)}
+              disabled={isSubmitting}
             />
 
             <div className="grid grid-cols-3 gap-3 mt-1">
@@ -271,7 +319,8 @@ const AdminProductModal = ({
                   <button
                     type="button"
                     onClick={() => removeExistingImage(img.id)}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                    disabled={isSubmitting}
+                    className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 disabled:cursor-not-allowed"
                   >
                     <FaTimes className="text-[10px]" />
                   </button>
@@ -288,7 +337,8 @@ const AdminProductModal = ({
                   <button
                     type="button"
                     onClick={() => removeNewImageAt(index)}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                    disabled={isSubmitting}
+                    className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 disabled:cursor-not-allowed"
                   >
                     <FaTimes className="text-[10px]" />
                   </button>
@@ -300,7 +350,8 @@ const AdminProductModal = ({
                 <button
                   type="button"
                   onClick={openFilePicker}
-                  className="aspect-square rounded-xl flex flex-col items-center justify-center gap-1 bg-gray-50 border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#f2592b] hover:text-[#f2592b] hover:bg-[#f2592b]/5 transition-colors"
+                  disabled={isSubmitting}
+                  className="aspect-square rounded-xl flex flex-col items-center justify-center gap-1 bg-gray-50 border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#f2592b] hover:text-[#f2592b] hover:bg-[#f2592b]/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:text-gray-400 disabled:hover:bg-gray-50"
                 >
                   {totalTiles === 0 ? (
                     <>
@@ -317,31 +368,46 @@ const AdminProductModal = ({
         </div>
 
         <div className="flex gap-3 px-6 py-5 border-t border-gray-100 shrink-0">
-          {onDelete && (
+          {/* {onDelete && (
             <button
               onClick={onDelete}
-              className="text-sm font-medium text-rose-500 hover:text-rose-600 px-2 transition-colors"
+              disabled={isSubmitting}
+              className="text-sm font-medium text-rose-500 hover:text-rose-600 px-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Delete
             </button>
-          )}
-          <div className="flex-1" />
+          )} */}
+          {/* <div className="flex-1" />
           <button
             onClick={() => handleSave("draft")}
-            disabled={!isValid}
-            className="rounded-xl border border-gray-200 text-gray-600 text-sm font-medium px-5 py-2.5 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            disabled={!isValid || isSubmitting}
+            className="rounded-xl border border-gray-200 text-gray-600 text-sm font-medium px-5 py-2.5 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
           >
-            Save as Draft
-          </button>
+            {isSubmitting ? "Saving..." : "Save as Draft"}
+          </button> */}
           <button
             onClick={() => handleSave("published")}
-            disabled={!isValid}
-            className="rounded-xl bg-[#f2592b] hover:bg-[#d94c22] text-white text-sm font-medium px-5 py-2.5 transition-colors disabled:opacity-50"
+            disabled={!isValid || isSubmitting}
+            className="rounded-xl bg-[#f2592b] hover:bg-[#d94c22] text-white text-sm font-medium px-5 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
           >
-            Save
+            {isSubmitting ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
+
+      {/* Category Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!categoryToDelete}
+        title="Delete Category"
+        message={
+          categoryToDelete
+            ? `Are you sure you want to delete the category "${categoryToDelete.name}"? This action cannot be undone.`
+            : ""
+        }
+        isLoading={isDeletingCategory}
+        onConfirm={handleConfirmCategoryDelete}
+        onCancel={handleCancelCategoryDelete}
+      />
     </>
   );
 };

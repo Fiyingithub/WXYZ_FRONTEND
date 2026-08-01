@@ -2,25 +2,11 @@
 import api from "../../api";
 import type { cateogryType } from "../../../Types/Admin/categoryType";
 
-export const categoryService = {
-    create: async (formData: FormData) => {
-    try {
-      const res = await api.post("/category", formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }); // send FormData itself — no wrapping object
-      return res.data;
-    } catch (error: any) {
-      const msg =
-        error?.response?.data?.message || error?.message || String(error);
-      console.error("Create category error:", msg);
-      throw error;
-    }
-  },
-
+export const userCategoryService = {
   getAll: async () => {
     try {
       const res = await api.get("/category");
-      return res.data;
+      return res.data.data;
     } catch (error: any) {
       const msg =
         error?.response?.data?.message || error?.message || String(error);

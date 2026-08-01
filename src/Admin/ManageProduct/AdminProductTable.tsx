@@ -1,6 +1,7 @@
-import { FaEdit, FaEye, FaTrash } from "react-icons/fa";
+import { useState } from "react";
 import type { Product } from "./AdminProduct";
 import Pagination from "../../Components/Pagination";
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import { formatDateParts } from "../../utils/formatDate";
 
 interface AdminProductTableProps {
@@ -37,20 +38,33 @@ const AdminProductTable = ({
   onDelete,
   onTogglePublish,
 }: AdminProductTableProps) => {
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+    setIsDeleting(true);
+    // onDelete is expected to be synchronous local state today; the awaited
+    // shape here just keeps this ready for when it becomes an API call.
+    await Promise.resolve(onDelete(productToDelete.id));
+    setIsDeleting(false);
+    setProductToDelete(null);
+  };
+
   return (
     <div className="w-full bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead>
-            <tr className="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
-              <th className="pl-6 py-4 w-50 font-semibold">Product</th>
-              <th className="pl-6 py-4 w-50 font-semibold">Category</th>
-              <th className="pl-6 py-4 w-50 font-semibold">Quantity</th>
-              <th className="pl-6 py-4 w-50 font-semibold">Date</th>
-              <th className="pl-6 py-4 w-50 font-semibold">Price</th>
-              <th className="pl-6 py-4 w-50 font-semibold">Status</th>
-              <th className="pl-6 py-4 w-50 font-semibold">Publish/Draft</th>
-              <th className="px-8 py-4 w-50 font-semibold text-right">
+            <tr className="bg-gray-50 text-gray-700 uppercase text-xs tracking-wide">
+              <th className="pl-6 py-4 w-50 font-bold">Product</th>
+              <th className="pl-6 py-4 w-50 font-bold">Category</th>
+              <th className="pl-6 py-4 w-50 font-bold">Quantity</th>
+              <th className="pl-6 py-4 w-50 font-bold">Date</th>
+              <th className="pl-6 py-4 w-50 font-bold">Price</th>
+              <th className="pl-6 py-4 w-50 font-bold">Status</th>
+              <th className="pl-6 py-4 w-50 font-bold">Publish/Draft</th>
+              <th className="px-8 py-4 w-50 font-bold text-right">
                 Actions
               </th>
             </tr>
@@ -122,24 +136,27 @@ const AdminProductTable = ({
                   <div className="flex items-center justify-end gap-3 text-gray-400">
                     <button
                       onClick={() => onView(product)}
-                      className="hover:text-blue-700 transition-colors"
+                      className="hover:text-blue-700 transition-colors text-xl"
                       aria-label="View"
+                      title="View"
                     >
-                      <FaEye />
+                      👁️
                     </button>
                     <button
                       onClick={() => onEdit(product)}
-                      className="hover:text-green-700 transition-colors"
+                      className="hover:text-green-700 transition-colors text-xl"
                       aria-label="Edit"
+                      title="Edit"
                     >
-                      <FaEdit />
+                      ✏️
                     </button>
                     <button
-                      onClick={() => onDelete(product.id)}
-                      className="hover:text-rose-500 transition-colors"
+                      onClick={() => setProductToDelete(product)}
+                      className="hover:text-rose-500 transition-colors text-xl"
                       aria-label="Delete"
+                      title="Delete"
                     >
-                      <FaTrash />
+                      🗑️
                     </button>
                   </div>
                 </td>
@@ -166,6 +183,19 @@ const AdminProductTable = ({
         totalItems={totalItems}
         pageSize={pageSize}
         onPageChange={onPageChange}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!productToDelete}
+        title="Delete Product"
+        message={
+          productToDelete
+            ? `Are you sure you want to delete "${productToDelete.name}"? This action cannot be undone.`
+            : ""
+        }
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setProductToDelete(null)}
       />
     </div>
   );

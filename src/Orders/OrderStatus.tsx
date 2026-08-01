@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import watch from '../Asset/ProductImages/watch.jpg'
+import watch from '../Asset/ProductImages/Suite.png';
 
 const OrderStatus = () => {
   return (
@@ -17,7 +17,7 @@ const OrderStatus = () => {
             <h2 className="text-lg font-medium">Item</h2>
             <p className="text-md md:text-xl font-semibold">Apple Watch Series 8 GPS</p>
           </div>
-          <span className="bg-yellow-100 text-yellow-800 text-md md:text-lg font-medium px-4 py-1 rounded-full mt-[-5px]">In progress</span>
+          <span className="bg-yellow-100 text-yellow-800 text-md md:text-lg font-medium px-4 py-1 rounded-full -mt1.25">In progress</span>
         </div>
 
         <div className="mb-6">
@@ -88,7 +88,7 @@ const OrderStatus = () => {
 
         <div className="mt-6 flex justify-between">
           <p className="text-gray-500 text-md">Order 1 of 13</p>
-          <button className="text-blue-500 text-md ml-4 hover:underline mr-[20px]">Next order <span className="text-gray-600 text-2xl">&#8594;</span></button>
+          <button className="text-blue-500 text-md ml-4 hover:underline mr-5">Next order <span className="text-gray-600 text-2xl">&#8594;</span></button>
         </div>
       </div>
     </div>

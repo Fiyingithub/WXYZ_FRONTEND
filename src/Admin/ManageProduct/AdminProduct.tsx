@@ -174,10 +174,12 @@ const AdminProduct = () => {
     fetchCategories();
   }, []);
 
-  const handleAddCategory = async (name: string) => {
+  const handleAddCategory = async (formData: FormData) => {
     startWaitingLoader();
     try {
-      const res = await categoryService.create({ name });
+      // If you need to handle image upload, modify this part
+      // For now, we'll just pass the name as before
+      const res = await categoryService.create(formData);
       if (res.error === false) {
         notifySuccess(res.message);
         fetchCategories();
@@ -215,7 +217,12 @@ const AdminProduct = () => {
     }
   };
 
-  const handleSubmitProduct = async ( values: ProductFormValues, publishStatus: PublishStatus ) => {
+  const handleSubmitProduct = async (
+    values: ProductFormValues,
+    publishStatus: PublishStatus,
+  ) => {
+    console.log("handleSubmitProduct called with status:", publishStatus); // Debug log
+
     try {
       startWaitingLoader();
       const formData = buildProductFormData(values, publishStatus);
@@ -227,14 +234,22 @@ const AdminProduct = () => {
         res = await productService.create(formData);
       }
 
-      if (res.error === false) {
+      if (res && res.error === false) {
         notifySuccess(res.message);
       }
 
       await fetchProducts();
       setIsModalOpen(false);
+      console.log("Product submitted successfully"); // Debug log
     } catch (error) {
-      notifyError(error instanceof Error ? error.message : "Error submitting product");
+      console.error("Error submitting product:", error);
+      notifyError(
+        error instanceof Error ? error.message : "Error submitting product",
+      );
+      throw error; // Re-throw to let the modal know there was an error
+    } finally {
+      stopWaitingLoader();
+      console.log("Loader stopped"); // Debug log
     }
   };
 

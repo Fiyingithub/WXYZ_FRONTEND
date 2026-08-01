@@ -1,122 +1,179 @@
-// import { useEffect } from 'react';
-// import Navbar from '../Components/Navbar';
-// import TopNav from '../Components/TopNav';
-// import Footer from '../Components/Footer';
-// import QueryString from 'query-string';
-// import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { FaRegHeart, FaChevronDown } from "react-icons/fa";
+import { userProductService } from "../services/Users/product/userProductService";
+import Footer from "../Components/Footer";
+import TopNav from "../Components/TopNav";
+import Navbar from "../Components/Navbar";
+// import ProductCard from '../../Components/ProductCard';
 
-// import { FaRegHeart } from "react-icons/fa";
-
-// import { allProducts } from './ProductDummyData';
-
-// function SortedProductDisplay() {
-//   const navigate = useNavigate();
-//   const queryString = QueryString.parse(window.location.search);
-//   const {category} = queryString;
-//   const sortedCategory = allProducts.filter((product) => product.category === category);
-
-//   const handleAddToCart = (e) => {
-//     e.preventDefault();
-//     navigate('/cart');
-//     // alert('Product added to cart successfully.');
-//   }
-
-//   useEffect(() => {
-//     window.scrollTo(0, 0);
-//   }, []);
-
-//   return (
-//     <div>
-//       <TopNav />
-//       <div className="sticky top-0 z-50">
-//         <Navbar />
-//       </div>
-
-//       <div className='flex justify-center'>
-//         <div className="bg-white w-[100%] mx-5 md:mx-10 lg:max-w-[1100px] lg:pt-8 pt-4 pb-16 lg:py-10 flex flex-col justify-center ">
-//           <div className=" flex flex-col lg:flex-row lg:items-center justify-between my-8 py-2 gap-3 mx-auto container max-w-[1100px] ">
-//             <p className="lg:text-xl font-semibold opacity-85">All {category} product <span className="text-sm text-gray-500">{`(${sortedCategory.length} product${sortedCategory.length === 1 ? '' : 's'} found)`}</span></p>
-//             <div className="flex gap-2">
-//               <p className="text-xl font-semibold opacity-85">Sort by</p>
-//               <select name="product-sort" id="product-sort" className="border border-gray-500 px-2 rounded">
-//                 <option value="Popularity">Newest Arivals</option>
-//                 <option value="Popularity">Popularity</option>
-//                 <option value="Popularity">Price: Low to High</option>
-//                 <option value="Popularity">Price: High to Low</option>
-//               </select>
-//             </div>
-//           </div>
-
-//           {sortedCategory.length > 0 ? (
-//             <div className="flex flex-col flex-wrap gap-10 sm:flex-row mx-4 sm:mx-0 ">
-//               {sortedCategory.map((product) => (
-//                 <div key={product.id} className='lg:w-56 overflow-hidden h-78 transition-all duration-500 ease-in-out'>
-//                   <div className='w-[100%] h-52 flex items-center justify-center bg-[#fff9f8] rounded-lg relative'>
-//                     <img src={product.img} alt="" className='w-[40%] lg:w-[80%] object-contain' />
-//                     <div className='absolute top-2 right-2 h-7 w-7 bg-white rounded-full flex items-center justify-center'>
-//                       <FaRegHeart className='text-primary'/>
-//                     </div>
-//                   </div>
-//                   <div className='h-28 flex flex-col justify-between '>
-//                     <div className='flex justify-between h-6'>
-//                       <h1 className='font-semibold'>{product.title}</h1>
-//                       <p className='font-semibold'><span className='text-[10px]'>₦</span>{product.price}</p>
-//                     </div>
-//                     <div className='h-12'>
-//                       <p className='text-sm '>{product.description}</p>
-//                     </div>
-//                     <div className='space-x-2'>
-//                       <button className='border border-primary py-1 px-4 rounded-full font-medium hover:bg-gradient-to-br from-primary to-[orange] ' onClick={() => navigate(`/productdetails/?product-id=${product.id}`)}>View</button>
-//                       <button className='border border-primary py-1 px-4 rounded-full font-medium hover:bg-gradient-to-br from-primary to-[orange] ' onClick={handleAddToCart}>Add to cart</button>
-//                     </div>
-//                   </div>
-//                 </div>
-//               ))}
-//             </div>
-//           ):(
-//             <div className='italic text-2xl text-[red]'>Sorry, No products found...</div>
-//           )}
-//         </div>
-//       </div>
-
-//       <Footer />
-//     </div>
-//   )
-// }
-
-// export default SortedProductDisplay
-
-
-
-
-import { useEffect } from 'react';
-import Navbar from '../Components/Navbar';
-import TopNav from '../Components/TopNav';
-import Footer from '../Components/Footer';
-import QueryString from 'query-string';
-import { useNavigate } from 'react-router-dom';
-import { FaRegHeart } from "react-icons/fa";
-import { allProducts } from './ProductDummyData';
+// Types
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string | number;
+  quantity: number;
+  status: string;
+  categoryId: string;
+  category: {
+    id: string;
+    name: string;
+  };
+  images: Array<{
+    id: string;
+    url: string;
+  }>;
+  createdAt?: string;
+}
 
 function SortedProductDisplay() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const category = searchParams.get("category");
 
-  const queryString = QueryString.parse(window.location.search);
-  const { category } = queryString;
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<string>("Newest");
 
-  const sortedCategory = allProducts.filter(
-    (product) => product.category === category
-  );
+  // Fetch products
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
 
-  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    navigate('/cart');
-    // Optionally trigger toast here if you're using it
+      try {
+        const response = await userProductService.getAll();
+
+        // Extract products from response
+        let allProducts: Product[] = [];
+        if (response.data?.products) {
+          allProducts = response.data.products;
+        } else if (Array.isArray(response.data)) {
+          allProducts = response.data;
+        } else if (response.data?.data) {
+          allProducts = Array.isArray(response.data.data)
+            ? response.data.data
+            : [response.data.data];
+        }
+
+        // Filter by category if provided
+        let filteredProducts = allProducts;
+        if (category) {
+          filteredProducts = allProducts.filter(
+            (product) =>
+              product.category?.name?.toLowerCase() === category.toLowerCase(),
+          );
+        }
+
+        // Only show ACTIVE products
+        filteredProducts = filteredProducts.filter(
+          (product) => product.status === "ACTIVE",
+        );
+
+        setProducts(filteredProducts);
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        setError("Failed to load products. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [category]);
+
+  // Sort products
+  const getSortedProducts = () => {
+    const sorted = [...products];
+
+    switch (sortBy) {
+      case "LowToHigh":
+        return sorted.sort((a, b) => {
+          const priceA =
+            typeof a.price === "string" ? parseFloat(a.price) : a.price;
+          const priceB =
+            typeof b.price === "string" ? parseFloat(b.price) : b.price;
+          return priceA - priceB;
+        });
+      case "HighToLow":
+        return sorted.sort((a, b) => {
+          const priceA =
+            typeof a.price === "string" ? parseFloat(a.price) : a.price;
+          const priceB =
+            typeof b.price === "string" ? parseFloat(b.price) : b.price;
+          return priceB - priceA;
+        });
+      case "Newest":
+        return sorted.sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return timeB - timeA;
+        });
+      default:
+        return sorted;
+    }
   };
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  const sortedProducts = getSortedProducts();
+
+  // Handlers
+  const handleViewProduct = (product: Product) => {
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleAddToCart = (product: Product) => {
+    // Add to cart logic
+    console.log("Add to cart:", product.id);
+    // navigate('/cart');
+  };
+
+  // Format currency
+  const formatAmount = (amt: number | string): string => {
+    const num = typeof amt === "string" ? parseFloat(amt) : amt;
+    return (
+      num
+        ?.toFixed(2)
+        ?.toString()
+        ?.replace(/\B(?=(\d{3})+(?!\d))/g, ",") || "0.00"
+    );
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-10 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 animate-pulse">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-gray-200 rounded-2xl aspect-3/4" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-20 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
+            <h2 className="text-2xl font-semibold text-red-600 mb-4">Oops!</h2>
+            <p className="text-gray-700 mb-6">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -124,73 +181,95 @@ function SortedProductDisplay() {
       <div className="sticky top-0 z-50">
         <Navbar />
       </div>
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          {/* Header with category name and sort */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+                {category ? `${category} Products` : "All Products"}
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                {sortedProducts.length} product
+                {sortedProducts.length === 1 ? "" : "s"} found
+              </p>
+            </div>
 
-      <div className="flex justify-center">
-        <div className="bg-white w-full mx-5 md:mx-10 lg:max-w-[1100px] lg:pt-8 pt-4 pb-16 lg:py-10 flex flex-col justify-center">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between my-8 py-2 gap-3 mx-auto container max-w-[1100px]">
-            <p className="lg:text-xl font-semibold opacity-85">
-              All {category} products{' '}
-              <span className="text-sm text-gray-500">
-                ({sortedCategory.length} product{sortedCategory.length === 1 ? '' : 's'} found)
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-700">
+                Sort by:
               </span>
-            </p>
-            <div className="flex gap-2">
-              <p className="text-xl font-semibold opacity-85">Sort by</p>
-              <select
-                name="product-sort"
-                id="product-sort"
-                className="border border-gray-500 px-2 rounded"
-              >
-                <option value="Newest">Newest Arrivals</option>
-                <option value="Popularity">Popularity</option>
-                <option value="LowToHigh">Price: Low to High</option>
-                <option value="HighToLow">Price: High to Low</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary cursor-pointer"
+                >
+                  <option value="Newest">Newest Arrivals</option>
+                  <option value="Popularity">Popularity</option>
+                  <option value="LowToHigh">Price: Low to High</option>
+                  <option value="HighToLow">Price: High to Low</option>
+                </select>
+                <FaChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+              </div>
             </div>
           </div>
 
-          {sortedCategory.length > 0 ? (
-            <div className="flex flex-col flex-wrap gap-10 sm:flex-row mx-4 sm:mx-0">
-              {sortedCategory.map((product) => (
+          {/* Product Grid */}
+          {sortedProducts.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
+              {sortedProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="lg:w-56 overflow-hidden h-78 transition-all duration-500 ease-in-out"
+                  className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
+                  onClick={() => handleViewProduct(product)}
                 >
-                  <div className="w-full h-52 flex items-center justify-center bg-[#fff9f8] rounded-lg relative">
+                  {/* Product Image */}
+                  <div className="relative aspect-square bg-gray-50 overflow-hidden">
                     <img
-                      src={product.img}
-                      alt={product.title}
-                      className="w-[40%] lg:w-[80%] object-contain"
+                      src={
+                        product.images?.[0]?.url ||
+                        "https://via.placeholder.com/300"
+                      }
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute top-2 right-2 h-7 w-7 bg-white rounded-full flex items-center justify-center">
+                    <button
+                      className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Wishlist logic
+                      }}
+                    >
                       <FaRegHeart className="text-primary" />
-                    </div>
+                    </button>
                   </div>
-                  <div className="h-28 flex flex-col justify-between">
-                    <div className="flex justify-between h-6">
-                      <h1 className="font-semibold">{product.title}</h1>
-                      <p className="font-semibold">
-                        <span className="text-[10px]">₦</span>
-                        {product.price}
-                      </p>
-                    </div>
-                    <div className="h-12">
-                      <p className="text-sm">{product.description}</p>
-                    </div>
-                    <div className="space-x-2">
+
+                  {/* Product Info */}
+                  <div className="p-3">
+                    {product.category && (
+                      <span className="text-xs text-primary font-medium">
+                        {product.category.name}
+                      </span>
+                    )}
+                    <h3 className="text-sm font-semibold text-gray-900 mt-1 truncate">
+                      {product.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                      {product.description || "No description"}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-lg font-bold text-gray-900">
+                        ₦{formatAmount(product.price)}
+                      </span>
                       <button
-                        className="border border-primary py-1 px-4 rounded-full font-medium hover:bg-gradient-to-br from-primary to-[orange]"
-                        onClick={() =>
-                          navigate(`/productdetails/?product-id=${product.id}`)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(product);
+                        }}
+                        className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-green-700 transition-colors"
                       >
-                        View
-                      </button>
-                      <button
-                        className="border border-primary py-1 px-4 rounded-full font-medium hover:bg-gradient-to-br from-primary to-[orange]"
-                        onClick={handleAddToCart}
-                      >
-                        Add to cart
+                        Add to Cart
                       </button>
                     </div>
                   </div>
@@ -198,13 +277,26 @@ function SortedProductDisplay() {
               ))}
             </div>
           ) : (
-            <div className="italic text-2xl text-[red]">
-              Sorry, no products found...
+            <div className="text-center py-20">
+              <div className="max-w-md mx-auto">
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  No Products Found
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  We couldn't find any products in this category. Try browsing
+                  other categories.
+                </p>
+                <button
+                  onClick={() => navigate("/shop")}
+                  className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Browse All Products
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
-
       <Footer />
     </div>
   );

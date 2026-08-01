@@ -1,5 +1,5 @@
 // import cat7 from '../../Asset/ProductImages/bigHeadPhone.PNG';
-import cat7 from "../../Asset/ProductImages/Mouse.png";
+import cat7 from "../../Asset/ProductImages/fashion2.png";
 
 const FeaturedProduct = () => {
   return (
@@ -42,7 +42,7 @@ const FeaturedProduct = () => {
                 check it out
               </button>
             </div>
-            <div className="w-full lg:w-1/2">
+            <div className="w-full lg:w-1/3">
               <img
                 src={cat7}
                 alt="img"

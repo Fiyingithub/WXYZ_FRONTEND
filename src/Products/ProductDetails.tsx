@@ -1,283 +1,705 @@
-// import { useState, useEffect } from "react";
-// import { useNavigate, useLocation } from "react-router-dom";
-// import axios from "axios";
-// // import queryString from 'query-string';
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  FaStar,
+  FaStarHalfAlt,
+  FaRegStar,
+  FaMinus,
+  FaPlus,
+  FaShoppingBag,
+  FaHeart,
+  FaShare,
+  FaTruck,
+  FaUndo,
+  FaShieldAlt,
+  FaChevronLeft,
+  FaChevronRight,
+} from "react-icons/fa";
 
-// // Components
-// import TopNav from "../Components/TopNav";
-// import Navbar from "../Components/Navbar";
-// import Footer from "../Components/Footer";
-// // import { FaStar } from "react-icons/fa";
+// Services
+import { userProductService } from "../services/Users/product/userProductService";
+import TopNav from "../Components/TopNav";
+import Navbar from "../Components/Navbar";
+import Footer from "../Components/Footer";
 
-// const ProductDetails = () => {
-//   // Get data from query
-//   // const q = queryString.parse(window.location.search);
-//   // const { productId } = q;
+// Types
+interface ProductImage {
+  id: string;
+  url: string;
+  productId?: string;
+}
 
-//   const location = useLocation();
-//   const productId = location.state.productId;
-//   const productCategory = location.state.category;
-//   // console.log(productCategory)
+interface Category {
+  id: string;
+  name: string;
+  createdAt?: string;
+}
 
-//   const [product, setProduct] = useState({});
-//   const [imageDisplay, setImageDisplay] = useState(null);
-//   useEffect(() => {
-//     const getProduct = async () => {
-//       try {
-//         const res = await axios.get(`https://oneworld-fq81.onrender.com/api/Product/GetProductById/${productId}`);
-//         setProduct(res.data.data);
-//         setImageDisplay(res.data.data.imageUrl.split(",")[0]);
-//         console.log(res.data.data)
-//       } catch (err) {
-//         console.log(err)
-//       }
-//     }
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string | number;
+  quantity: number;
+  status: "ACTIVE" | "DRAFT" | string;
+  categoryId: string;
+  createdAt: string;
+  updatedAt: string;
+  category: Category;
+  images: ProductImage[];
+}
 
-//     if(productId) {
-//       getProduct()
-//     };
-//   }, [productId]);
+interface RelatedProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string | number;
+  quantity: number;
+  status: string;
+  categoryId: string;
+  category: Category;
+  images: ProductImage[];
+}
 
-//   const navigate = useNavigate();
-//   const [quantity, setQuantity] = useState(1);
-//   const colors = ["#e63946", "#b0c7a1", "#cbd5e1", "#94a3b8", "#d1d5db"];
+const ProductDetails = () => {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>(); // Get ID from URL params
 
-//   const increaseQuantity = () => setQuantity(quantity + 1);
-//   const decreaseQuantity = () => setQuantity(quantity > 1 ? quantity - 1 : 1);
+  // State
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string>("");
+  const [quantity, setQuantity] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<
+    "description" | "specifications" | "reviews"
+  >("description");
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-//   const handleAddToCart = (e) => {
-//     e.preventDefault();
-//     navigate('/cart');
-//     // alert('Product added to cart successfully.');
-//   }
+  // Colors for product variants
+  const colors = [
+    { name: "Space Gray", value: "#4a4a4a" },
+    { name: "Silver", value: "#c0c0c0" },
+    { name: "Green", value: "#4a7c59" },
+    { name: "Sky Blue", value: "#87CEEB" },
+    { name: "Pink", value: "#ffb6c1" },
+  ];
 
-//   const [relatedProducts, setRelatedProducts] = useState([]);
-//   useEffect(() => {
-//     const getAllProducts = async () => {
-//       try {
-//         const res = await axios.get('https://oneworld-fq81.onrender.com/api/Product/GetAllProduct');
-//         // Filter
-//         const filteredProducts = res.data.filter((item) => item.category === productCategory);
-//         setRelatedProducts(filteredProducts)
-//         console.log(filteredProducts)
-//       } catch (err) {
-//         console.log(err)
-//       }
-//     }
-//     getAllProducts()
-//   }, [productCategory]);
+  // Format currency
+  const formatAmount = (amt: number | string): string => {
+    const num = typeof amt === "string" ? parseFloat(amt) : amt;
+    return (
+      num
+        ?.toFixed(2)
+        ?.toString()
+        ?.replace(/\B(?=(\d{3})+(?!\d))/g, ",") || "0.00"
+    );
+  };
 
-//   useEffect(() => {
-//     window.scrollTo(0, 0);
-//   }, []);
+  // Calculate discount
+  const discountPercentage = useMemo(() => {
+    if (!product?.price) return 0;
+    const price =
+      typeof product.price === "string"
+        ? parseFloat(product.price)
+        : product.price;
+    return price > 50000 ? 20 : 0;
+  }, [product?.price]);
 
-//   const productImages = product.imageUrl !== undefined && product !== undefined ? product.imageUrl.split(",") : null;
+  const originalPrice = useMemo(() => {
+    if (!product?.price || discountPercentage === 0) return null;
+    const price =
+      typeof product.price === "string"
+        ? parseFloat(product.price)
+        : product.price;
+    return price / (1 - discountPercentage / 100);
+  }, [product?.price, discountPercentage]);
 
-//   const formatAmount = (amt) =>
-//     amt
-//       .toFixed(2)
-//       .toString()
-//       .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  // Fetch product details using the ID from URL params
+  useEffect(() => {
+    const getProduct = async () => {
+      if (!id) {
+        setError("Product ID is missing");
+        setLoading(false);
+        return;
+      }
 
-//   return (
-//     <div>
-//       <TopNav/>
-//       <div className="sticky top-0 z-50">
-//         <Navbar/>
-//       </div>
-//       <div className="min-h-screen bg-gray-50 py-10 px-4 lg:max-w-[1100px] mx-auto ">
-//         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-//           {/* Left Section: Product Images */}
-//           <div>
-//             <img
-//               src={product.imageUrl !== undefined ? imageDisplay : `https://via.placeholder.com/500`}
-//               alt={product.name}
-//               className="w-full rounded-lg"
-//             />
-//             <div className="flex space-x-4 mt-4">
-//               {productImages !== null && productImages.map((item, idx) => (
-//                   <img
-//                     key={idx}
-//                     src={item}
-//                     alt="Airpods Color"
-//                     className="w-16 h-16 object-cover rounded-lg border"
-//                     onClick={() => setImageDisplay(item)}
-//                   />
-//                 ))}
-//             </div>
-//           </div>
+      try {
+        setLoading(true);
+        setError(null);
 
-//           {/* Right Section: Product Details */}
-//           <div className="space-y-4">
-//             <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
-//             <p className="text-gray-500">
-//               {product.description}
-//             </p>
-//             <div className="flex items-center space-x-2">
-//               <span className="text-green-500 font-semibold">★ ★ ★ ★ ★</span>
-//               <span className="text-gray-500">(121)</span>
-//             </div>
-//             <div className="text-2xl font-semibold text-gray-900">₦{product !== undefined && product.price !== undefined ? formatAmount(product.price) : null}</div>
+        const response = await userProductService.getById(id);
 
-//             {/* Color Options */}
-//             <div>
-//               <h3 className="text-sm font-medium text-gray-900 mb-2">
-//                 Choose a Color
-//               </h3>
-//               <div className="flex space-x-4">
-//                 {colors.map((color, idx) => (
-//                   <button
-//                     key={idx}
-//                     style={{ backgroundColor: color }}
-//                     className="w-8 h-8 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-//                   />
-//                 ))}
-//               </div>
-//             </div>
+        let productData = response.data;
 
-//             {/* Quantity Selector */}
-//             <div className="flex items-center space-x-4">
-//               <div className="flex items-center border border-gray-300 rounded">
-//                 <button
-//                   onClick={decreaseQuantity}
-//                   className="px-4 py-2 text-gray-600 hover:bg-gray-100"
-//                 >
-//                   -
-//                 </button>
-//                 <span className="px-4">{quantity}</span>
-//                 <button
-//                   onClick={increaseQuantity}
-//                   className="px-4 py-2 text-gray-600 hover:bg-gray-100"
-//                 >
-//                   +
-//                 </button>
-//               </div>
-//               <span className="text-red-500 font-medium">Only {product.quantity} items left!</span>
-//             </div>
+        if (response.data?.products && Array.isArray(response.data.products)) {
+          productData = response.data.products[0];
+        } else if (response.data?.data) {
+          productData = response.data.data;
+        }
 
-//             {/* Buttons */}
-//             <div className="flex space-x-4">
-//               <button className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-green-700">
-//                 Buy Now
-//               </button>
-//               <button className="bg-gray-100 text-gray-900 px-6 py-3 rounded-lg hover:bg-gray-200" onClick={handleAddToCart}>
-//                 Add to Cart
-//               </button>
-//             </div>
+        setProduct(productData);
 
-//             {/* Delivery Information */}
-//             {/* <div className="space-y-2">
-//               <div className="flex items-center space-x-2">
-//                 <span className="text-gray-500">🚚 Free Delivery</span>
-//                 <input
-//                   type="text"
-//                   placeholder="Enter Postal Code"
-//                   className="border border-gray-300 rounded px-4 py-2"
-//                 />
-//               </div>
-//               <p className="text-sm text-gray-500">
-//                 Free 30-days Delivery Returns.{" "}
-//                 <Link to="#" className="text-blue-500 underline">
-//                   Details
-//                 </Link>
-//               </p>
-//             </div> */}
-//           </div>
-//         </div>
+        if (productData.images && productData.images.length > 0) {
+          setSelectedImage(productData.images[0].url);
+        }
+      } catch (err) {
+        console.error("Error fetching product:", err);
+        setError("Failed to load product details. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-//         {/* Full Product Description Section */}
-//         {/* <div className="mt-12">
-//           <h2 className="text-3xl font-bold text-gray-900 mb-8 border-b-2 border-gray-200 pb-2">
-//             Product Details
-//           </h2>
-//           <div className="bg-white shadow-md rounded-lg p-8">
-//             <p className="text-gray-600 text-lg leading-relaxed mb-6">
-//               Experience the ultimate combination of high-fidelity audio, sleek design, and unmatched comfort with the AirPods Max. Featuring industry-leading noise cancellation, spatial audio, and luxurious materials, these headphones set a new standard in personal audio.
-//             </p>
+    getProduct();
+  }, [id]); // Re-run when ID changes
 
-//             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//               <div>
-//                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Key Features:</h3>
-//                 <ul className="space-y-3 text-gray-600">
-//                   <li className="flex items-center">
-//                     <span className="bg-blue-500 w-3 h-3 rounded-full mr-3"></span> 
-//                     High-Fidelity Audio for an immersive experience
-//                   </li>
-//                   <li className="flex items-center">
-//                     <span className="bg-blue-500 w-3 h-3 rounded-full mr-3"></span> 
-//                     Active Noise Cancellation with Transparency Mode
-//                   </li>
-//                   <li className="flex items-center">
-//                     <span className="bg-blue-500 w-3 h-3 rounded-full mr-3"></span> 
-//                     Crafted with premium materials for all-day comfort
-//                   </li>
-//                   <li className="flex items-center">
-//                     <span className="bg-blue-500 w-3 h-3 rounded-full mr-3"></span> 
-//                     Spatial Audio with dynamic head tracking
-//                   </li>
-//                 </ul>
-//               </div>
+  // Fetch related products
+  useEffect(() => {
+    const getRelatedProducts = async () => {
+      if (!product?.categoryId) return;
 
-//               <div>
-//                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Specifications:</h3>
-//                 <ul className="space-y-3 text-gray-600">
-//                   <li className="flex justify-between">
-//                     <span className="font-medium text-gray-900">Dimensions:</span>
-//                     <span>7.37 x 6.64 x 3.28 inches</span>
-//                   </li>
-//                   <li className="flex justify-between">
-//                     <span className="font-medium text-gray-900">Weight:</span>
-//                     <span>384.8 grams</span>
-//                   </li>
-//                   <li className="flex justify-between">
-//                     <span className="font-medium text-gray-900">Battery Life:</span>
-//                     <span>Up to 20 hours</span>
-//                   </li>
-//                   <li className="flex justify-between">
-//                     <span className="font-medium text-gray-900">Connectivity:</span>
-//                     <span>Bluetooth 5.0</span>
-//                   </li>
-//                   <li className="flex justify-between">
-//                     <span className="font-medium text-gray-900">Available Colors:</span>
-//                     <span>Space Gray, Silver, Green, Sky Blue, Pink</span>
-//                   </li>
-//                 </ul>
-//               </div>
-//             </div>
-//           </div>
-//         </div> */}
+      try {
+        const response = await userProductService.getAll();
 
-//         {/* Related Products Section */}
-//         <div className="mt-12">
-//           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Related Products</h2>
-//           <div className="flex space-x-4 overflow-x-scroll lg:overflow-hidden scrollbar-hide p-2 -m-2">
-//             {relatedProducts !== null && relatedProducts.length > 0 &&
-//               relatedProducts.map((product) => (
-//                 <div
-//                   key={product.productId}
-//                   className="flex-shrink-0 w-64 border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow duration-300"
-//                 >
-//                   <img
-//                     src={product === undefined && product.imageUrl === null ? null : product.imageUrl.split(",")[0]}
-//                     alt="Related Product"
-//                     className="w-full h-40 object-cover rounded-lg mb-4"
-//                   />
-//                   <h3 className="text-lg font-medium text-gray-900">{product === undefined && product === null ? null : product.name}</h3>
-//                   <p className="text-sm text-gray-500">{product === undefined && product === null ? null : product.description}</p>
-//                   <div className="mt-2 text-xl font-semibold text-gray-900">₦{product === undefined && product === null ? null : formatAmount(product.price)}</div>
-//                   <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 w-full"
-//                     onClick={() => navigate(`/productdetails/?product-id=${product.productId}`, { state: product })}>
-//                     View Details
-//                   </button>
-//                 </div>
-//               ))}
-//           </div>
-//         </div>
+        let allProducts: RelatedProduct[] = [];
+        if (response.data?.products) {
+          allProducts = response.data.products;
+        } else if (Array.isArray(response.data)) {
+          allProducts = response.data;
+        } else if (response.data?.data) {
+          allProducts = Array.isArray(response.data.data)
+            ? response.data.data
+            : [response.data.data];
+        }
 
-//       </div>
-//       <Footer />
-//     </div>
-//   );
-// };
+        const filtered = allProducts
+          .filter(
+            (item: RelatedProduct) =>
+              item.categoryId === product.categoryId && item.id !== id,
+          )
+          .slice(0, 8);
 
-// export default ProductDetails;
+        setRelatedProducts(filtered);
+      } catch (err) {
+        console.error("Error fetching related products:", err);
+      }
+    };
+
+    getRelatedProducts();
+  }, [product?.categoryId, id]);
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Handlers
+  const increaseQuantity = () => setQuantity((prev) => prev + 1);
+  const decreaseQuantity = () =>
+    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
+
+  const handleImageSelect = (image: string, index: number) => {
+    setSelectedImage(image);
+    setCurrentImageIndex(index);
+  };
+
+  const handleAddToCart = () => {
+    // Add to cart logic
+    navigate("/cart");
+  };
+
+  const handleBuyNow = () => {
+    // Buy now logic
+    navigate("/checkout");
+  };
+
+  const handlePrevImage = () => {
+    const images = getImageArray();
+    if (images.length === 0) return;
+    const newIndex =
+      currentImageIndex === 0 ? images.length - 1 : currentImageIndex - 1;
+    setSelectedImage(images[newIndex]);
+    setCurrentImageIndex(newIndex);
+  };
+
+  const handleNextImage = () => {
+    const images = getImageArray();
+    if (images.length === 0) return;
+    const newIndex =
+      currentImageIndex === images.length - 1 ? 0 : currentImageIndex + 1;
+    setSelectedImage(images[newIndex]);
+    setCurrentImageIndex(newIndex);
+  };
+
+  const getImageArray = (): string[] => {
+    if (!product?.images || product.images.length === 0) return [];
+    return product.images
+      .map((img) => img.url)
+      .filter((url) => url.trim() !== "");
+  };
+
+  // Render star rating
+  const renderStars = (rating: number = 0) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+    return (
+      <div className="flex items-center text-yellow-400">
+        {[...Array(fullStars)].map((_, i) => (
+          <FaStar key={`full-${i}`} className="text-sm" />
+        ))}
+        {hasHalfStar && <FaStarHalfAlt className="text-sm" />}
+        {[...Array(emptyStars)].map((_, i) => (
+          <FaRegStar key={`empty-${i}`} className="text-sm" />
+        ))}
+      </div>
+    );
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-20 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-pulse">
+            <div className="bg-gray-200 h-100 rounded-lg"></div>
+            <div className="space-y-4">
+              <div className="bg-gray-200 h-8 w-3/4 rounded"></div>
+              <div className="bg-gray-200 h-4 w-1/2 rounded"></div>
+              <div className="bg-gray-200 h-6 w-1/3 rounded"></div>
+              <div className="bg-gray-200 h-20 w-full rounded"></div>
+              <div className="bg-gray-200 h-12 w-1/2 rounded"></div>
+              <div className="bg-gray-200 h-12 w-full rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-20 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
+            <h2 className="text-2xl font-semibold text-red-600 mb-4">Oops!</h2>
+            <p className="text-gray-700 mb-6">{error || "Product not found"}</p>
+            <button
+              onClick={() => navigate("/shop")}
+              className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Browse Products
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const images = getImageArray();
+  const price =
+    typeof product.price === "string"
+      ? parseFloat(product.price)
+      : product.price;
+  const isInStock = product.quantity > 0;
+
+  return (
+    <div>
+      <TopNav />
+      <div className="sticky top-0 z-50">
+        <Navbar />
+      </div>
+
+      {/* Breadcrumb */}
+      <div className="bg-gray-100 py-3 px-4">
+        <div className="max-w-7xl mx-auto text-sm text-gray-600">
+          <span
+            className="hover:text-primary cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            Home
+          </span>
+          <span className="mx-2">/</span>
+          <span className="hover:text-primary cursor-pointer">
+            {product.category?.name || "Category"}
+          </span>
+          <span className="mx-2">/</span>
+          <span className="text-gray-900 font-medium border-b border-orange-600">{product.name}</span>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="min-h-screen bg-gray-50 py-10 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Section: Product Images */}
+            <div>
+              <div className="relative bg-white rounded-lg shadow-md overflow-hidden">
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={handlePrevImage}
+                      className="absolute cursor-pointer left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-md transition-colors z-10"
+                    >
+                      <FaChevronLeft className="text-gray-700" />
+                    </button>
+                    <button
+                      onClick={handleNextImage}
+                      className="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-md transition-colors z-10"
+                    >
+                      <FaChevronRight className="text-gray-700" />
+                    </button>
+                  </>
+                )}
+                <img
+                  src={selectedImage || "https://via.placeholder.com/500"}
+                  alt={product.name}
+                  className="w-full h-100 object-contain"
+                />
+              </div>
+
+              {/* Thumbnail Navigation */}
+              {images.length > 0 && (
+                <div className="flex space-x-3 mt-4 overflow-x-auto pb-2">
+                  {images.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img}
+                      alt={`${product.name} - ${idx + 1}`}
+                      className={`w-20 h-20 object-cover rounded-lg border-2 cursor-pointer transition-all shrink-0 ${
+                        selectedImage === img
+                          ? "border-primary ring-2 ring-primary/20"
+                          : "border-gray-200 hover:border-gray-400"
+                      }`}
+                      onClick={() => handleImageSelect(img, idx)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right Section: Product Details */}
+            <div className="space-y-5">
+              {/* Product Name & Category */}
+              <div>
+                {product.category && (
+                  <span className="text-sm text-primary font-medium uppercase tracking-wide">
+                    {product.category.name}
+                  </span>
+                )}
+                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mt-1">
+                  {product.name}
+                </h1>
+              </div>
+
+              {/* Rating & Stock Status */}
+              <div className="flex items-center space-x-3">
+                {renderStars(4.5)}
+                <span className="text-sm text-gray-500">(121 reviews)</span>
+                <span
+                  className={`text-sm font-medium ${isInStock ? "text-green-600" : "text-red-600"}`}
+                >
+                  {isInStock ? "In Stock" : "Out of Stock"}
+                </span>
+              </div>
+
+              {/* Price */}
+              <div className="flex items-baseline space-x-3">
+                <span className="text-3xl font-bold text-gray-900">
+                  ₦{formatAmount(price)}
+                </span>
+                {originalPrice && (
+                  <>
+                    <span className="text-lg text-gray-400 line-through">
+                      ₦{formatAmount(originalPrice)}
+                    </span>
+                    <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded">
+                      {discountPercentage}% OFF
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Description */}
+              <p className="text-gray-600 text-sm leading-relaxed">
+                {product.description || "No description available."}
+              </p>
+
+              {/* Color Options */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 mb-3">
+                  Choose a Color
+                </h3>
+                <div className="flex space-x-3">
+                  {colors.map((color, idx) => (
+                    <button
+                      key={idx}
+                      style={{ backgroundColor: color.value }}
+                      className={`w-10 h-10 cursor-pointer rounded-full border-2 transition-all hover:scale-110 ${
+                        idx === 0
+                          ? "border-primary ring-2 ring-primary/20"
+                          : "border-gray-300 hover:border-gray-400"
+                      }`}
+                      title={color.name}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Quantity & Stock */}
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                  <button
+                    onClick={decreaseQuantity}
+                    className="px-4 py-2 text-gray-600 cursor-pointer hover:bg-gray-100 transition-colors"
+                    disabled={quantity <= 1}
+                  >
+                    <FaMinus className="text-xs" />
+                  </button>
+                  <span className="px-4 py-2 text-gray-800 font-medium min-w-10 text-center">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={increaseQuantity}
+                    className="px-4 py-2 text-gray-600 cursor-pointer hover:bg-gray-100 transition-colors"
+                    disabled={quantity >= product.quantity}
+                  >
+                    <FaPlus className="text-xs" />
+                  </button>
+                </div>
+                {product.quantity <= 10 && (
+                  <span className="text-sm text-red-500 font-medium">
+                    Only {product.quantity} items left!
+                  </span>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleBuyNow}
+                  className="bg-green-600 cursor-pointer text-white px-8 py-3.5 rounded-lg hover:bg-green-700 transition-colors font-medium flex-1 flex items-center justify-center gap-2"
+                >
+                  <FaShoppingBag />
+                  Buy Now
+                </button>
+                <button
+                  onClick={handleAddToCart}
+                  className="bg-gray-200 cursor-pointer text-gray-800 px-8 py-3.5 rounded-lg hover:bg-gray-300 transition-colors font-medium flex-1 flex items-center justify-center gap-2"
+                >
+                  Add to Cart
+                </button>
+                <button className="p-3.5 border cursor-pointer border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                  <FaHeart className="text-gray-600 hover:text-red-500 transition-colors" />
+                </button>
+                <button className="p-3.5 border cursor-pointer border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                  <FaShare className="text-gray-600" />
+                </button>
+              </div>
+
+              {/* Delivery & Returns Info */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-gray-200">
+                <div className="flex items-center space-x-3 text-sm text-gray-600">
+                  <FaTruck className="text-primary text-lg" />
+                  <div>
+                    <p className="font-medium">Free Delivery</p>
+                    <p className="text-xs text-gray-400">2-5 business days</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 text-sm text-gray-600">
+                  <FaUndo className="text-primary text-lg" />
+                  <div>
+                    <p className="font-medium">30-Day Returns</p>
+                    <p className="text-xs text-gray-400">Hassle-free returns</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 text-sm text-gray-600">
+                  <FaShieldAlt className="text-primary text-lg" />
+                  <div>
+                    <p className="font-medium">Secure Payment</p>
+                    <p className="text-xs text-gray-400">
+                      100% secure checkout
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Product Information Tabs */}
+          <div className="mt-12 bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab("description")}
+                className={`px-6 py-4 font-medium transition-colors ${
+                  activeTab === "description"
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Description
+              </button>
+              <button
+                onClick={() => setActiveTab("specifications")}
+                className={`px-6 py-4 font-medium transition-colors ${
+                  activeTab === "specifications"
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Specifications
+              </button>
+              <button
+                onClick={() => setActiveTab("reviews")}
+                className={`px-6 py-4 font-medium transition-colors ${
+                  activeTab === "reviews"
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Reviews
+              </button>
+            </div>
+
+            <div className="p-6">
+              {activeTab === "description" && (
+                <div className="prose max-w-none">
+                  <p className="text-gray-600 leading-relaxed">
+                    {product.description ||
+                      "No detailed description available."}
+                  </p>
+                </div>
+              )}
+
+              {activeTab === "specifications" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="font-medium text-gray-700">Category</span>
+                    <span className="text-gray-600">
+                      {product.category?.name || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="font-medium text-gray-700">
+                      Quantity Available
+                    </span>
+                    <span className="text-gray-600">{product.quantity}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="font-medium text-gray-700">Status</span>
+                    <span
+                      className={`${product.status === "ACTIVE" ? "text-green-600" : "text-yellow-600"}`}
+                    >
+                      {product.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="font-medium text-gray-700">
+                      Product ID
+                    </span>
+                    <span className="text-gray-600 text-sm">
+                      {product.id.substring(0, 8)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "reviews" && (
+                <div className="text-center py-8">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="flex items-center space-x-2">
+                      {renderStars(4.5)}
+                      <span className="text-xl font-semibold text-gray-900">
+                        4.5
+                      </span>
+                    </div>
+                    <p className="text-gray-500">Based on 121 reviews</p>
+                    <button className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                      Write a Review
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Related Products */}
+          {relatedProducts.length > 0 && (
+            <div className="mt-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center justify-between">
+                <span>Related Products</span>
+                <button
+                  onClick={() =>
+                    navigate(`/shop?category=${product.categoryId}`)
+                  }
+                  className="text-sm text-primary hover:underline font-medium"
+                >
+                  View All
+                </button>
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {relatedProducts.map((related) => {
+                  const relatedImages = related.images || [];
+                  return (
+                    <div
+                      key={related.id}
+                      className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
+                      onClick={() =>
+                        navigate(`/products/${related.id}`, {
+                          state: {
+                            productId: related.id,
+                            category: related.categoryId,
+                          },
+                        })
+                      }
+                    >
+                      <div className="relative overflow-hidden aspect-square">
+                        <img
+                          src={
+                            relatedImages[0]?.url ||
+                            "https://via.placeholder.com/300"
+                          }
+                          alt={related.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                      <div className="p-3">
+                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                          {related.name}
+                        </h3>
+                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                          {related.description || "No description"}
+                        </p>
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-lg font-semibold text-gray-900">
+                            ₦{formatAmount(related.price)}
+                          </span>
+                          <button
+                            className="bg-primary text-white p-1.5 rounded-full hover:bg-green-700 transition-colors text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Add to cart logic
+                            }}
+                          >
+                            <FaPlus />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+};
+
+export default ProductDetails;

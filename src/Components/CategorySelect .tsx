@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { FaCheck, FaChevronDown, FaPlus, FaSearch, FaTimes, FaTrashAlt } from "react-icons/fa";
+import { FaCheck, FaChevronDown, FaCloudUploadAlt, FaPlus, FaSearch, FaTimes, FaTrashAlt } from "react-icons/fa";
 
 export interface Category {
   id: string;
@@ -10,8 +10,9 @@ interface CategorySelectProps {
   categories: Category[];
   value: string; // selected category id
   onChange: (categoryId: string) => void;
-  onAddCategory: (name: string) => Promise<void> | void;
-  onDeleteCategory?: (id: string) => Promise<void> | void;
+  /** Receives category name and optional image file */
+  onAddCategory: (formData: FormData) => Promise<void> | void;
+  onDeleteCategory?: (categoryId: string) => void;
   placeholder?: string;
 }
 
@@ -27,6 +28,8 @@ const CategorySelect = ({
   const [search, setSearch] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryImage, setNewCategoryImage] = useState<File | null>(null);
+  const [newCategoryImagePreview, setNewCategoryImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -45,10 +48,30 @@ const CategorySelect = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Clean up the object URL when it's replaced or the component unmounts
+  useEffect(() => {
+    return () => {
+      if (newCategoryImagePreview) URL.revokeObjectURL(newCategoryImagePreview);
+    };
+  }, [newCategoryImagePreview]);
+
   const handleSelect = (id: string) => {
     onChange(id);
     setIsOpen(false);
     setSearch("");
+  };
+
+  const handleImageSelected = (file: File | null) => {
+    if (newCategoryImagePreview) URL.revokeObjectURL(newCategoryImagePreview);
+    setNewCategoryImage(file);
+    setNewCategoryImagePreview(file ? URL.createObjectURL(file) : null);
+  };
+
+  const resetAddForm = () => {
+    if (newCategoryImagePreview) URL.revokeObjectURL(newCategoryImagePreview);
+    setNewCategoryName("");
+    setNewCategoryImage(null);
+    setNewCategoryImagePreview(null);
   };
 
   const handleAddCategory = async () => {
@@ -57,8 +80,13 @@ const CategorySelect = ({
 
     setIsSubmitting(true);
     try {
-      await onAddCategory(name);
-      setNewCategoryName("");
+      const formData = new FormData();
+      formData.append("name", name);
+      if (newCategoryImage) {
+        formData.append("image", newCategoryImage);
+      }
+      await onAddCategory(formData);
+      resetAddForm();
       setIsAddOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -98,7 +126,7 @@ const CategorySelect = ({
               <li className="px-4 py-3 text-sm text-gray-400">No categories found</li>
             )}
             {filtered.map((category) => (
-              <li key={category.id} className ="flex ">
+              <li key={category.id} className="flex items-center">
                 <button
                   type="button"
                   onClick={() => handleSelect(category.id)}
@@ -142,7 +170,10 @@ const CategorySelect = ({
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-gray-800">Add Category</h3>
               <button
-                onClick={() => setIsAddOpen(false)}
+                onClick={() => {
+                  resetAddForm();
+                  setIsAddOpen(false);
+                }}
                 className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 transition-colors"
               >
                 <FaTimes className="text-sm" />
@@ -159,10 +190,42 @@ const CategorySelect = ({
               onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
             />
 
+            <label className="text-sm font-medium text-gray-700 mt-4 block">
+              Category Image <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+
+            {newCategoryImagePreview ? (
+              <div className="relative mt-1.5 w-full h-32 rounded-xl overflow-hidden group">
+                <img src={newCategoryImagePreview} alt="" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => handleImageSelected(null)}
+                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                  aria-label="Remove image"
+                >
+                  <FaTimes className="text-xs" />
+                </button>
+              </div>
+            ) : (
+              <label className="mt-1.5 flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-5 text-gray-400 hover:border-[#f2592b]/40 hover:text-[#f2592b] transition-colors cursor-pointer">
+                <FaCloudUploadAlt className="text-xl" />
+                <span className="text-xs font-medium">Click to upload an image</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleImageSelected(e.target.files?.[0] ?? null)}
+                />
+              </label>
+            )}
+
             <div className="flex gap-3 mt-6">
               <button
                 type="button"
-                onClick={() => setIsAddOpen(false)}
+                onClick={() => {
+                  resetAddForm();
+                  setIsAddOpen(false);
+                }}
                 className="flex-1 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium py-2.5 hover:bg-gray-50 transition-colors"
               >
                 Cancel

@@ -33,7 +33,7 @@ const NavbarDashboard = ({ toggleSidebar }: NavbarDashboardProps) => {
 
   const handleProfileClick = () => {
     setIsMenuOpen(false);
-    navigate("/admin/profile");
+    navigate("/admin/dashboard/profile");
   };
 
   // Close dropdown on outside click
