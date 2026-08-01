@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { useToast } from "../Loaders/ToastContext";
 import WaitingLoader from "../Loaders/WaitingLoader";
-
+import { jwtDecode } from "jwt-decode";
 import loginImage from "../Asset/images/loginImage.jpg";
 import logo from "../Asset/images/wxyz_logo.svg";
-
-
+import { authService } from "../services/Admin/authService";
+import { useAuth } from "../Context/Auth/useAuth";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const { notifySuccess, notifyError, startWaitingLoader, stopWaitingLoader } =
     useToast();
   const [showPassword, setShowPassword] = useState(false);
@@ -20,18 +20,66 @@ const LoginPage = () => {
     password: "",
   });
 
+  // Validation states
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Input validation handlers
+  const validateEmail = (value: string) => {
+    if (!value) {
+      setEmailError("Email is required");
+      return false;
+    } else if (!emailRegex.test(value)) {
+      setEmailError("Invalid email format");
+      return false;
+    } else {
+      setEmailError("");
+      return true;
+    }
+  };
+
+  const validatePassword = (value: string) => {
+    if (!value) {
+      setPasswordError("Password is required");
+      return false;
+    } else if (value.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      return false;
+    } else {
+      setPasswordError("");
+      return true;
+    }
+  };
+
   const handleLogin = async (e: any) => {
     e.preventDefault();
+    // Validate all fields before submit
+    const validEmail = validateEmail(formData.email);
+    const validPassword = validatePassword(formData.password);
+    if (!validEmail || !validPassword) return;
     startWaitingLoader();
 
     try {
-      const res = await axios.post(
-        "https://oneworld-fq81.onrender.com/api/User/Login",
-        formData,
-      );
-      notifySuccess(res.data.responseMessage);
-      sessionStorage.setItem("user", JSON.stringify(res.data.data));
-      navigate("/admin/dashboard");
+      const res = await authService.login(formData);
+      if (res.error === false) {
+        stopWaitingLoader();
+        notifySuccess(res.message);
+
+        const decoded = jwtDecode<{ role: string }>(res.data.accessToken);
+
+        const role = decoded?.role;
+
+        login( res.data.accessToken, res.data.refreshToken );
+
+        if (role === "ADMIN") {
+          navigate("/admin/dashboard");
+        } else if (role === "Guardian") {
+        }
+      }
+      // navigate("/admin/dashboard");
       stopWaitingLoader();
     } catch (err: any) {
       console.log(err.response.data);
@@ -49,12 +97,12 @@ const LoginPage = () => {
       <WaitingLoader />
       <div className="w-full max-w-4xl bg-white rounded-lg lg:shadow-lg overflow-hidden flex">
         {/* Left Section */}
-        <div className="hidden md:flex md:w-1/2 bg-gray-800 items-center justify-center">
-          <div>
+        <div className="hidden md:flex md:w-1/2 items-center justify-center">
+          <div className="w-full h-full">
             <img
               src={loginImage}
               alt="Illustration"
-              className="w-full h-auto"
+              className="w-full h-full object-cover"
             />
           </div>
         </div>
@@ -89,6 +137,9 @@ const LoginPage = () => {
                     setFormData({ ...formData, email: e.target.value })
                   }
                 />
+                {emailError && (
+                  <p className="text-red-500 text-xs mt-1">{emailError}</p>
+                )}
               </div>
 
               <div className="mb-4">
@@ -116,7 +167,11 @@ const LoginPage = () => {
                   >
                     {showPassword ? "🙈" : "👁️"}
                   </button>
+                  
                 </div>
+                {passwordError && (
+                  <p className="text-red-500 text-xs mt-1">{passwordError}</p>
+                )}
               </div>
 
               <div className="flex items-center justify-between mb-6">

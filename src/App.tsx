@@ -24,7 +24,10 @@ import Example from "./Pages/Example";
 // import Checkout from './Cart/Checkout';
 
 // // Admin
-import Dashboard from './Admin/Dashboard';
+import Dashboard from "./Admin/Dashboard";
+import AdminProduct from "./Admin/ManageProduct/AdminProduct";
+import AdminOrder from "./Admin/order/AdminOrder";
+import { AdminLayout } from "./Layouts/AdminLayouts";
 // import AddProduct from './Admin/ManageProduct/AddProduct';
 // import ViewProducts from './Admin/ManageProduct/ViewProducts';
 // import ProductInventory from './Admin/ManageProduct/ProductInventory';
@@ -45,7 +48,7 @@ function App() {
           {/* <Route path="/products" element={<SortedProductDisplay />} /> */}
           {/* <Route path="/productdetails" element={<ProductDetails />} /> */}
           <Route path="/signup" element={<SignupPage />} />
-          <Route path="/login" element={<LoginPage />} /> 
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/example" element={<Example />} />
 
           {/* Orders */}
@@ -54,10 +57,12 @@ function App() {
           <Route path="/checkout/summary" element={<Checkout />} />
 
           {/* ADMIN */}
-          <Route path="/admin/dashboard" element={<Dashboard />} />
-          {/* <Route path="/admin/dashboard/addProduct" element={<AddProduct />} /> */}
-          {/* <Route path="/admin/dashboard/viewProduct" element={<ViewProducts />} /> */}
-
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="dashboard/products" element={<AdminProduct />} />
+            <Route path="dashboard/orders" element={<AdminOrder />} />
+          </Route>
         </Routes>
       </Router>
     </ToastProvider>

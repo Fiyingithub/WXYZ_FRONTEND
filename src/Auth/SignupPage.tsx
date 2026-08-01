@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { useToast } from "../Loaders/ToastContext";
 import WaitingLoader from "../Loaders/WaitingLoader";
-
+import "react-toastify/dist/ReactToastify.css";
 import signupImage from "../Asset/images/signupImage.jpg";
+import { authService } from "../services/Admin/authService";
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { notifySuccess, startWaitingLoader, stopWaitingLoader } =
-    useToast();
+  const { notifySuccess, startWaitingLoader, stopWaitingLoader } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   // const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -17,26 +16,58 @@ const SignupPage = () => {
     username: "",
     email: "",
     password: "",
+    role: "CUSTOMER",
   });
+
+  // Validation states
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Input validation handlers
+  const validateEmail = (value: string) => {
+    if (!value) {
+      setEmailError("Email is required");
+      return false;
+    } else if (!emailRegex.test(value)) {
+      setEmailError("Invalid email format");
+      return false;
+    } else {
+      setEmailError("");
+      return true;
+    }
+  };
+
+  const validatePassword = (value: string) => {
+    if (!value) {
+      setPasswordError("Password is required");
+      return false;
+    } else if (value.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      return false;
+    } else {
+      setPasswordError("");
+      return true;
+    }
+  };
 
   const handleSignup = async (e: any) => {
     e.preventDefault();
+    // Validate all fields before submit
+    const validEmail = validateEmail(formData.email);
+    const validPassword = validatePassword(formData.password);
+    if (!validEmail || !validPassword) return;
     startWaitingLoader();
 
     try {
-      const res = await axios.post(
-        "https://oneworld-fq81.onrender.com/api/User/NewUser",
-        formData,
-      );
-      stopWaitingLoader();
-      notifySuccess(res.data.responseMessage);
-      navigate("/login");
-      // clear form
-      setFormData({
-        username: "",
-        email: "",
-        password: "",
-      });
+      const res = await authService.create(formData);
+      if (res.status === 201) {
+        stopWaitingLoader();
+        notifySuccess(res.message);
+        navigate("/login");
+      }
     } catch (error) {
       console.log(error);
       stopWaitingLoader();
@@ -53,7 +84,7 @@ const SignupPage = () => {
       <WaitingLoader />
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden flex flex-row-reverse">
         {/* Left Section */}
-        <div className="hidden md:flex md:w-1/2 bg-[red] items-center justify-center">
+        <div className="hidden md:flex md:w-1/2 items-center justify-center">
           <div className="w-full h-full">
             <img
               src={signupImage}
@@ -112,6 +143,9 @@ const SignupPage = () => {
                     setFormData({ ...formData, email: e.target.value })
                   }
                 />
+                {emailError && (
+                  <p className="text-red-500 text-xs mt-1">{emailError}</p>
+                )}
               </div>
 
               <div className="mb-4">
@@ -141,6 +175,9 @@ const SignupPage = () => {
                     {showPassword ? "🙈" : "👁️"}
                   </button>
                 </div>
+                {passwordError && (
+                  <p className="text-red-500 text-xs mt-1">{passwordError}</p>
+                )}
               </div>
 
               <div className="mb-6">
