@@ -388,7 +388,7 @@ const AdminProductModal = ({
           <button
             onClick={() => handleSave("published")}
             disabled={!isValid || isSubmitting}
-            className="rounded-xl bg-[#f2592b] hover:bg-[#d94c22] text-white text-sm font-medium px-5 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+            className="rounded-xl bg-[#f2592b] hover:bg-[#d94c22] text-white text-sm font-medium px-5 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-30"
           >
             {isSubmitting ? "Saving..." : "Save"}
           </button>

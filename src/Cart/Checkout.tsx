@@ -34,8 +34,8 @@ const Checkout = () => {
         <Navbar />
       </div>
 
-      <div className='flex flex-col md:flex-row justify-between my-10 max-w-[1100px] mx-auto'>
-        <div className='border lg:w-[700px] rounded-lg p-4 space-y-4 '>
+      <div className='flex flex-col md:flex-row justify-between my-10 max-w-275 mx-auto'>
+        <div className='border lg:w-175 rounded-lg p-4 space-y-4 '>
           <div className='space-y-2'>
             <label htmlFor="state" className='font-semibold'>Shipping State</label>
             <select id="state" name="state" className='w-full p-2 border rounded-md'>
@@ -109,12 +109,12 @@ const Checkout = () => {
         </div>
 
         <div>
-          <div className='customScrollbar border md:w-[370px] rounded-lg overflow-hidden'>
+          <div className='customScrollbar border md:w-92.5 rounded-lg overflow-hidden'>
             <div className="bg-primary flex justify-between text-white h-10 items-center p-4">
               <h2>Order Summary</h2>
               <button onClick={() => navigate('/cart')} className='text-black bg-secondary p-1 rounded-md'>Modify</button>
             </div>
-            <div className='h-[300px] overflow-y-scroll customScrollbar '>
+            <div className='h-75 overflow-y-scroll customScrollbar '>
               {cartItems.map(item => (
                 <div key={item.id} className='flex justify-between border-b p-4'>
                   <img src={item.image} alt="" className='w-16 h-16' />
