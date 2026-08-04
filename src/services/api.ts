@@ -2,8 +2,8 @@ import axios from "axios";
 import type { AxiosRequestConfig, AxiosRequestHeaders } from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/api",
-  // baseURL: "https://educat.codeweb.com.ng",
+//   baseURL: "http://localhost:3000/api",
+  baseURL: "https://wxyz-backend.onrender.com/api",
 });
 
 // REQUEST interceptor — attach access token

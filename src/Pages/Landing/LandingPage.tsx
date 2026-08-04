@@ -6,8 +6,8 @@ import Footer from '../../Components/Footer';
 import Categories from './Categories';
 import FeaturedProduct from './FeaturedProduct';
 
-import heroVideoDesktop from '../../Asset/Video/wxyz_web_video.mp4';
-import heroVideoMobile from '../../Asset/Video/wxyz_mobile_video.mp4';
+// import heroVideoDesktop from '../../Asset/Video/wxyz_web_video.mp4';
+// import heroVideoMobile from '../../Asset/Video/wxyz_mobile_video.mp4';
 import AllProducts from './AllProducts';
 
 function LandingPage() {
@@ -47,7 +47,7 @@ function LandingPage() {
         {!prefersReducedMotion && (
           <video
             key={isMobile ? 'mobile' : 'desktop'}
-            src={isMobile ? heroVideoMobile : heroVideoDesktop}
+            src={isMobile ? 'https://res.cloudinary.com/dx99hljwc/video/upload/v1785855401/wxyz_mobile_video_cehwqv.mp4' : 'https://res.cloudinary.com/dx99hljwc/video/upload/v1785855400/wxyz_web_video_pgugxn.mp4'}
             className="absolute inset-0 w-full h-full object-cover"
             autoPlay
             muted
