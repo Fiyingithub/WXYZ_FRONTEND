@@ -1,7 +1,7 @@
 // ============================================
 // 1. CART CONTEXT / SERVICE (cartContext.tsx)
 // ============================================
-import React, { createContext, useReducer, useEffect } from "react";
+import React, { useReducer, useEffect } from "react";
 import type { CartAction, CartItem, CartState } from "./cart-types";
 import { CartContext } from "./cartContext";
 
