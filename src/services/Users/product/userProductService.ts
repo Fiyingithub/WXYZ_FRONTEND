@@ -26,6 +26,18 @@ export const userProductService = {
     }
   },
 
+  getByCategoryId: async (id: string) => {
+    try {
+      const res = await api.get(`/product/category/${id}`);
+      // console.log(res.data);
+      return res.data;
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || error?.message || String(error);
+      console.error(`Get product by category ${id} error:`, msg);
+      throw error;
+    }
+  },
+
   // Update accepts multipart form data for product edits
   update: async (id: string, data: Product | FormData) => {
     try {

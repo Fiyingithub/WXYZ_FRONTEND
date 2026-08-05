@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react';
-// import { useNavigate } from 'react-router-dom';
-import Navbar from '../../Components/Navbar';
-import TopNav from '../../Components/TopNav';
-import Footer from '../../Components/Footer';
 import Categories from './Categories';
 import FeaturedProduct from './FeaturedProduct';
-
-// import heroVideoDesktop from '../../Asset/Video/wxyz_web_video.mp4';
-// import heroVideoMobile from '../../Asset/Video/wxyz_mobile_video.mp4';
 import AllProducts from './AllProducts';
+import { useNavigate } from 'react-router-dom';
 
 function LandingPage() {
+  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth < 1024 : false
   );
@@ -37,10 +32,6 @@ function LandingPage() {
 
   return (
     <div>
-      <TopNav/>
-      <div className="sticky top-0 z-50 w-full">
-        <Navbar/>
-      </div>
 
       <div className="relative h-screen w-full overflow-hidden">
         {/* Background video */}
@@ -63,7 +54,7 @@ function LandingPage() {
         <div className="relative z-10 w-full h-full">
           {/* Button positioned at bottom right on mobile, centered on large screens */}
           <div className="absolute bottom-8 right-4 lg:bottom-1/3 lg:right-1/2 lg:translate-x-1/2 lg:translate-y-1/2">
-            <button className="bg-white text-[#f2592b] font-semibold shadow-lg flex justify-center items-center gap-4 w-37.5 py-3 rounded-full hover:scale-105 transition-all duration-700 ease-in-out cursor-pointer">
+            <button onClick={() => navigate('/products')} className="bg-white text-[#f2592b] font-semibold shadow-lg flex justify-center items-center gap-4 w-37.5 py-3 rounded-full hover:scale-105 transition-all duration-700 ease-in-out cursor-pointer">
               Shop now
             </button>
           </div>
@@ -77,8 +68,6 @@ function LandingPage() {
       
       {/* All products */}
       <AllProducts/>
-
-      <Footer/>
     </div>
   )
 }

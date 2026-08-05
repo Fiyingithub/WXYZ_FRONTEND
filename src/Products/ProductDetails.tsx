@@ -18,9 +18,7 @@ import {
 
 // Services
 import { userProductService } from "../services/Users/product/userProductService";
-import TopNav from "../Components/TopNav";
-import Navbar from "../Components/Navbar";
-import Footer from "../Components/Footer";
+
 
 // Types
 interface ProductImage {
@@ -309,14 +307,9 @@ const ProductDetails = () => {
 
   return (
     <div>
-      <TopNav />
-      <div className="sticky top-0 z-50">
-        <Navbar />
-      </div>
-
       {/* Breadcrumb */}
       <div className="bg-gray-100 py-3 px-4">
-        <div className="max-w-7xl mx-auto text-sm text-gray-600">
+        <div className="max-w-6xl mx-auto text-sm text-gray-600">
           <span
             className="hover:text-primary cursor-pointer"
             onClick={() => navigate("/")}
@@ -697,7 +690,6 @@ const ProductDetails = () => {
           )}
         </div>
       </div>
-      <Footer />
     </div>
   );
 };
