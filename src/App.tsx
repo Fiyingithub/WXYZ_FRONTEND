@@ -23,6 +23,7 @@ import { CartPage } from "./Pages/Cart/CartPage";
 import { CheckoutPage } from "./Pages/Checkout/CheckoutPage";
 import { PaymentPage } from "./Pages/Payments/PaymentPage";
 import LandingPageLayout from "./Layouts/LandingPageLayout";
+import { NotFoundPage } from "./Pages/NotFoundPage";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/payment" element={<PaymentPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
 
           <Route path="/signup" element={<SignupPage />} />

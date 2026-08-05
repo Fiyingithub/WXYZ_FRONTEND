@@ -1,44 +1,52 @@
 // ============================================
 // 3. CART PAGE (CartPage.tsx)
 // ============================================
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaTrash, FaMinus, FaPlus, FaShoppingBag, FaArrowLeft } from 'react-icons/fa';
-import { useCart } from '../../Context/cart/useCart';
-import { CartNotificationModal } from '../../Components/CartNotificationModal';
-
-
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  FaTrash,
+  FaMinus,
+  FaPlus,
+  FaArrowLeft,
+} from "react-icons/fa";
+import { useCart } from "../../Context/cart/useCart";
+import { CartNotificationModal } from "../../Components/CartNotificationModal";
+import { EmptyCartRunner } from "../../Components/EmptyCartRunner";
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
   const { state, dispatch } = useCart();
   const [notification, setNotification] = useState<{
     open: boolean;
-    type: 'ADD' | 'UPDATE' | 'REMOVE' | 'ERROR';
+    type: "ADD" | "UPDATE" | "REMOVE" | "ERROR";
     item?: any;
     message?: string;
-  }>({ open: false, type: 'ADD' });
+  }>({ open: false, type: "ADD" });
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const handleUpdateQuantity = (item: any, newQuantity: number) => {
     if (newQuantity >= 1 && newQuantity <= item.maxStock) {
       dispatch({
-        type: 'UPDATE_QUANTITY',
+        type: "UPDATE_QUANTITY",
         payload: { id: item.id, quantity: newQuantity },
       });
       setNotification({
         open: true,
-        type: 'UPDATE',
+        type: "UPDATE",
         item: { ...item, quantity: newQuantity },
-        message: 'Quantity updated successfully',
+        message: "Quantity updated successfully",
       });
     }
   };
 
   const handleRemoveItem = (item: any) => {
-    dispatch({ type: 'REMOVE_ITEM', payload: item.id });
+    dispatch({ type: "REMOVE_ITEM", payload: item.id });
     setNotification({
       open: true,
-      type: 'REMOVE',
+      type: "REMOVE",
       item: item,
       message: `${item.name} removed from cart`,
     });
@@ -47,11 +55,15 @@ export const CartPage: React.FC = () => {
   if (state.items.length === 0) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
-        <FaShoppingBag className="text-6xl text-gray-300 mb-4" />
-        <h2 className="text-2xl font-semibold text-gray-600">Your cart is empty</h2>
-        <p className="text-gray-400 mt-2">Looks like you haven't added any items yet</p>
+        <EmptyCartRunner className="mb-4" />
+        <h2 className="text-2xl font-semibold text-gray-600">
+          Your cart is empty
+        </h2>
+        <p className="text-gray-400 mt-2">
+          Looks like you haven't added any items yet
+        </p>
         <button
-          onClick={() => navigate('/products')}
+          onClick={() => navigate("/products")}
           className="mt-6 bg-[#f2592b] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#e04a1f] transition-colors"
         >
           Start Shopping
@@ -72,7 +84,9 @@ export const CartPage: React.FC = () => {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Cart Items */}
         <div className="lg:col-span-2">
-          <h1 className="text-2xl font-bold mb-6">Shopping Cart ({state.totalItems} items)</h1>
+          <h1 className="text-2xl font-bold mb-6">
+            Shopping Cart ({state.totalItems} items)
+          </h1>
 
           {state.items.map((item: any) => (
             <div
@@ -87,20 +101,28 @@ export const CartPage: React.FC = () => {
               <div className="flex-1">
                 <h3 className="font-semibold">{item.name}</h3>
                 <p className="text-sm text-gray-500">{item.category}</p>
-                <p className="text-[#f2592b] font-bold mt-1">₦{item.price.toLocaleString()}</p>
+                <p className="text-[#f2592b] font-bold mt-1">
+                  ₦{item.price.toLocaleString()}
+                </p>
 
                 <div className="flex items-center gap-4 mt-2">
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => handleUpdateQuantity(item, item.quantity - 1)}
+                      onClick={() =>
+                        handleUpdateQuantity(item, item.quantity - 1)
+                      }
                       className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-sm transition-colors"
                       disabled={item.quantity <= 1}
                     >
                       <FaMinus />
                     </button>
-                    <span className="w-10 text-center font-medium">{item.quantity}</span>
+                    <span className="w-10 text-center font-medium">
+                      {item.quantity}
+                    </span>
                     <button
-                      onClick={() => handleUpdateQuantity(item, item.quantity + 1)}
+                      onClick={() =>
+                        handleUpdateQuantity(item, item.quantity + 1)
+                      }
                       className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-sm transition-colors"
                       disabled={item.quantity >= item.maxStock}
                     >
@@ -122,7 +144,9 @@ export const CartPage: React.FC = () => {
                 {item.quantity < item.maxStock ? (
                   <span className="text-xs text-green-600">In Stock</span>
                 ) : (
-                  <span className="text-xs text-red-500">Max quantity reached</span>
+                  <span className="text-xs text-red-500">
+                    Max quantity reached
+                  </span>
                 )}
               </div>
             </div>
@@ -136,18 +160,26 @@ export const CartPage: React.FC = () => {
 
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Subtotal ({state.totalItems} items)</span>
-                <span className="font-medium">₦{state.subtotal.toLocaleString()}</span>
+                <span className="text-gray-600">
+                  Subtotal ({state.totalItems} items)
+                </span>
+                <span className="font-medium">
+                  ₦{state.subtotal.toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Shipping</span>
                 <span className="font-medium">
-                  {state.shipping === 0 ? 'Free' : `₦${state.shipping.toLocaleString()}`}
+                  {state.shipping === 0
+                    ? "Free"
+                    : `₦${state.shipping.toLocaleString()}`}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Tax (7.5%)</span>
-                <span className="font-medium">₦{state.tax.toLocaleString()}</span>
+                <span className="font-medium">
+                  ₦{state.tax.toLocaleString()}
+                </span>
               </div>
               {state.discount > 0 && (
                 <div className="flex justify-between text-green-600">
@@ -158,13 +190,15 @@ export const CartPage: React.FC = () => {
               <div className="border-t border-gray-200 pt-3 mt-3">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-[#f2592b]">₦{state.total.toLocaleString()}</span>
+                  <span className="text-[#f2592b]">
+                    ₦{state.total.toLocaleString()}
+                  </span>
                 </div>
               </div>
             </div>
 
             <button
-              onClick={() => navigate('/checkout')}
+              onClick={() => navigate("/checkout")}
               className="w-full mt-6 bg-[#f2592b] text-white py-3 rounded-xl font-semibold hover:bg-[#e04a1f] transition-colors"
             >
               Proceed to Checkout
