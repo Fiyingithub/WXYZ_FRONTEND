@@ -1,8 +1,11 @@
+// ============================================
+// UPDATED NAVBAR WITH CART INTEGRATION
+// ============================================
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 // Icons
-import {  FaUserCircle, FaSignOutAlt,FaClipboardList, FaHeart } from "react-icons/fa";
+import { FaUserCircle, FaSignOutAlt, FaClipboardList, FaHeart } from "react-icons/fa";
 import { MdOutlineShoppingCart } from "react-icons/md";
 import { IoSearch } from "react-icons/io5";
 import { TiThMenu } from "react-icons/ti";
@@ -11,24 +14,21 @@ import { HiOutlineUserGroup } from "react-icons/hi";
 
 import logo from '../Asset/images/wxyz_logo.png';
 import { useAuth } from '../Context/Auth/useAuth';
+import { useCart } from '../Context/cart/useCart';
 
-// Types
-// interface User {
-//   id: string;
-//   username: string;
-//   email: string;
-//   role?: 'user' | 'admin' | 'vendor';
-// }
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { state } = useCart(); // Get cart state
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [cartCount] = useState(3); // This would come from your cart context
+  
+  // Get cart count from context instead of static value
+  const cartCount = state.totalItems; // This will update in real-time
   
   const profileRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -105,9 +105,6 @@ const Navbar = () => {
             <Link to="/products" className="text-gray-700 hover:text-[#f2592b] font-medium transition-colors">
               Shop
             </Link>
-            <Link to="/about" className="text-gray-700 hover:text-[#f2592b] font-medium transition-colors">
-              About
-            </Link>
             <Link to="/contact" className="text-gray-700 hover:text-[#f2592b] font-medium transition-colors">
               Contact
             </Link>
@@ -141,15 +138,15 @@ const Navbar = () => {
               <IoSearch className="text-xl" />
             </button>
 
-            {/* Cart */}
+            {/* Cart - Now connected to real cart state */}
             <Link 
               to="/cart" 
               className="relative p-2 text-gray-600 hover:text-[#f2592b] transition-colors"
             >
               <MdOutlineShoppingCart className="text-2xl" />
               {cartCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-[#f2592b] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                  {cartCount}
+                <span className="absolute -top-0.5 -right-0.5 bg-[#f2592b] text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1.5 animate-pulse-once">
+                  {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
             </Link>
@@ -161,7 +158,7 @@ const Navbar = () => {
                   {/* Logged In */}
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center space-x-2 p-1.5 rounded-full border border-[#f2592b]/10 bg-gray-50 hover:bg-gray-100  transition-colors"
+                    className="flex items-center space-x-2 p-1.5 rounded-full border border-[#f2592b]/10 bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
                     <div className="w-8 h-8 rounded-full bg-[#f2592b] text-white flex items-center justify-center">
                       <span className="text-sm font-semibold uppercase">
@@ -175,7 +172,7 @@ const Navbar = () => {
 
                   {/* Profile Dropdown */}
                   {isProfileOpen && (
-                    <div className="absolute -right-15 md:right-0 mt-2 w-56 bg-white rounded-lg shadow-lg ring-1 ring-black/5 py-1 overflow-hidden">
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg ring-1 ring-black/5 py-1 overflow-hidden">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-semibold text-gray-900">{user.username}</p>
                         <p className="text-xs text-gray-500 truncate">{user.email}</p>
@@ -310,6 +307,16 @@ const Navbar = () => {
               Contact
             </Link>
             
+            {/* Show cart items count in mobile menu too */}
+            {cartCount > 0 && (
+              <div className="flex items-center justify-between py-2 border-b border-gray-50">
+                <span className="text-gray-700 font-medium">Cart Items</span>
+                <span className="bg-[#f2592b] text-white text-xs font-bold rounded-full px-2.5 py-1">
+                  {cartCount}
+                </span>
+              </div>
+            )}
+            
             {!user && (
               <div className="pt-2 flex flex-col space-y-2">
                 <button
@@ -335,6 +342,18 @@ const Navbar = () => {
           </div>
         </div>
       )}
+
+      {/* Add CSS animation for cart badge */}
+      <style>{`
+        @keyframes pulse-once {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.3); }
+          100% { transform: scale(1); }
+        }
+        .animate-pulse-once {
+          animation: pulse-once 0.3s ease-in-out;
+        }
+      `}</style>
     </nav>
   );
 };

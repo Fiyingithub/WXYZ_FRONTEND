@@ -57,7 +57,7 @@ const ProductCard = ({ product, onClick, onAddToCart }: ProductCardProps) => {
             }}
             disabled={!inStock}
             aria-label="Add to cart"
-            className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-[#f2592b]  hover:bg-[#f2592b] hover:text-white"
+            className="absolute bottom-3 right-3 cursor-pointer w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-[#f2592b]  hover:bg-[#f2592b] hover:text-white"
           >
             <FaShoppingCart className="text-sm" />
           </button>
