@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
     setIsAuthenticated(true);
 
-    console.log("Token saved:",localStorage.getItem("userToken"));
+    // console.log("Token saved:",localStorage.getItem("userToken"));
 
   } catch (error) {
     console.error("Invalid token:", error);

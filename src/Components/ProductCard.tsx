@@ -1,27 +1,23 @@
-import { FaShoppingCart } from "react-icons/fa";
-
-export interface LandingProduct {
-  id: string;
-  name: string;
-  price: string;
-  quantity: number;
-  status: "ACTIVE" | "DRAFT";
-  category: { id: string; name: string };
-  images: { id: string; url: string }[];
-}
+import { FaShoppingCart, FaSpinner } from "react-icons/fa";
+import type { Product } from "../Types/Admin/product";
 
 interface ProductCardProps {
-  product: LandingProduct;
-  onClick: (product: LandingProduct) => void;
-  onAddToCart?: (product: LandingProduct) => void;
+  product: Product;
+  onClick: (product: Product) => void;
+  onAddToCart?: (product: Product) => void;
+  isAddingToCart?: boolean;
 }
 
-const formatPrice = (price: string) => `₦${Number(price).toLocaleString("en-NG")}`;
+const formatPrice = (price: number) => `₦${Number(price).toLocaleString("en-NG")}`;
 
-const ProductCard = ({ product, onClick, onAddToCart }: ProductCardProps) => {
+const ProductCard = ({
+  product,
+  onClick,
+  onAddToCart,
+  isAddingToCart = false,
+}: ProductCardProps) => {
   const image = product.images?.[0]?.url;
   const inStock = product.quantity > 0;
-  
 
   return (
     <div
@@ -53,19 +49,25 @@ const ProductCard = ({ product, onClick, onAddToCart }: ProductCardProps) => {
           <button
             onClick={(e) => {
               e.stopPropagation();
+              if (isAddingToCart) return;
               onAddToCart(product);
             }}
-            disabled={!inStock}
+            disabled={!inStock || isAddingToCart}
             aria-label="Add to cart"
-            className="absolute bottom-3 right-3 cursor-pointer w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-[#f2592b]  hover:bg-[#f2592b] hover:text-white"
+            aria-busy={isAddingToCart}
+            className="absolute bottom-3 right-3 cursor-pointer w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-[#f2592b] hover:bg-[#f2592b] hover:text-white disabled:cursor-not-allowed disabled:opacity-70"
           >
-            <FaShoppingCart className="text-sm" />
+            {isAddingToCart ? (
+              <FaSpinner className="text-sm animate-spin" />
+            ) : (
+              <FaShoppingCart className="text-sm" />
+            )}
           </button>
         )}
       </div>
 
       <div className="p-4 flex flex-col gap-1">
-        <span className="text-xs text-gray-400">{product.category?.name}</span>
+        <span className="text-xs text-gray-400">{product.categoryName}</span>
         <h3 className="text-sm font-semibold text-gray-800 truncate">{product.name}</h3>
         <p className="text-base font-bold text-[#f2592b] mt-1">{formatPrice(product.price)}</p>
       </div>

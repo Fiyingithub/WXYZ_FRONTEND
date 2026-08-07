@@ -7,9 +7,6 @@ import {
   FaPhone,
   FaShoppingBag,
 } from "react-icons/fa";
-import Footer from "../../Components/Footer";
-import TopNav from "../../Components/TopNav";
-import Navbar from "../../Components/Navbar";
 import type { Order } from "../../Admin/order/AdminOrder";
 // import AdminOrderTable from "./AdminOrderTable";
 // import { Order } from "./AdminOrder";
@@ -119,10 +116,6 @@ const CustomerProfile = () => {
 
   return (
     <div>
-      <TopNav />
-      <div className="sticky top-0 z-50 w-full">
-        <Navbar />
-      </div>
       <div className="w-full min-h-screen bg-gray-50 px-4 md:px-8 py-8">
         <div className="max-w-4xl mx-auto flex flex-col gap-6">
           {/* Header card */}
@@ -199,7 +192,6 @@ const CustomerProfile = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

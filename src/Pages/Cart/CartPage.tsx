@@ -1,21 +1,29 @@
-// ============================================
-// 3. CART PAGE (CartPage.tsx)
-// ============================================
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaTrash, FaMinus, FaPlus, FaArrowLeft } from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../store/store";
 import {
-  FaTrash,
-  FaMinus,
-  FaPlus,
-  FaArrowLeft,
-} from "react-icons/fa";
-import { useCart } from "../../Context/cart/useCart";
+  getCartAction,
+  updateCartQuantityAction,
+  removeCartProductAction,
+} from "../../store/Users/cart/cartAction";
 import { CartNotificationModal } from "../../Components/CartNotificationModal";
+import { AuthPromptModal } from "../../Components/AuthPromptModal";
 import { EmptyCartRunner } from "../../Components/EmptyCartRunner";
+import { useAuth } from "../../Context/Auth/useAuth";
+import type { CartLineItem } from "../../Types/user/cartType";
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
-  const { state, dispatch } = useCart();
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useAuth();
+
+  const cart = useSelector((state: RootState) => state.getCart.cart);
+  const loading = useSelector((state: RootState) => state.getCart.loading);
+  const totalItems = useSelector((state: RootState) => state.getCart.totalItems);
+  const subtotal = useSelector((state: RootState) => state.getCart.subtotal);
+
   const [notification, setNotification] = useState<{
     open: boolean;
     type: "ADD" | "UPDATE" | "REMOVE" | "ERROR";
@@ -23,36 +31,104 @@ export const CartPage: React.FC = () => {
     message?: string;
   }>({ open: false, type: "ADD" });
 
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleUpdateQuantity = (item: any, newQuantity: number) => {
-    if (newQuantity >= 1 && newQuantity <= item.maxStock) {
-      dispatch({
-        type: "UPDATE_QUANTITY",
-        payload: { id: item.id, quantity: newQuantity },
-      });
+  useEffect(() => {
+    dispatch(getCartAction());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (notification.open) {
+      const timer = setTimeout(() => {
+        setNotification((prev) => ({ ...prev, open: false }));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const handleUpdateQuantity = async (
+    line: CartLineItem,
+    newQuantity: number,
+  ) => {
+    if (newQuantity < 1) return;
+
+    try {
+      await dispatch(
+        updateCartQuantityAction(line.productId, newQuantity, line.product),
+      );
       setNotification({
         open: true,
         type: "UPDATE",
-        item: { ...item, quantity: newQuantity },
+        item: {
+          name: line.product.name,
+          quantity: newQuantity,
+          price: Number(line.product.price),
+          image: line.product.images?.[0]?.url,
+        },
         message: "Quantity updated successfully",
+      });
+
+      dispatch(getCartAction());
+    } catch (error) {
+      console.log(error);
+      setNotification({
+        open: true,
+        type: "ERROR",
+        message: "Could not update quantity",
       });
     }
   };
 
-  const handleRemoveItem = (item: any) => {
-    dispatch({ type: "REMOVE_ITEM", payload: item.id });
-    setNotification({
-      open: true,
-      type: "REMOVE",
-      item: item,
-      message: `${item.name} removed from cart`,
-    });
+  const handleRemoveItem = async (line: CartLineItem) => {
+    try {
+      await dispatch(removeCartProductAction(line.productId));
+      setNotification({
+        open: true,
+        type: "REMOVE",
+        item: {
+          name: line.product.name,
+          quantity: line.quantity,
+          price: Number(line.product.price),
+          image: line.product.images?.[0]?.url,
+        },
+        message: `${line.product.name} removed from cart`,
+      });
+
+      dispatch(getCartAction());
+
+    } catch (error) {
+      console.log(error);
+      setNotification({
+        open: true,
+        type: "ERROR",
+        message: "Could not remove item",
+      });
+    }
   };
 
-  if (state.items.length === 0) {
+  const handleCheckoutClick = () => {
+    if (!user) {
+      setShowAuthPrompt(true);
+      return;
+    }
+    navigate("/checkout");
+  };
+
+  const items = cart?.items ?? [];
+
+  if (loading && items.length === 0) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <p className="text-gray-400">Loading your cart...</p>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
         <EmptyCartRunner className="mb-4" />
@@ -85,72 +161,87 @@ export const CartPage: React.FC = () => {
         {/* Cart Items */}
         <div className="lg:col-span-2">
           <h1 className="text-2xl font-bold mb-6">
-            Shopping Cart ({state.totalItems} items)
+            Shopping Cart ({totalItems} {totalItems === 1 ? "item" : "items"})
           </h1>
 
-          {state.items.map((item: any) => (
-            <div
-              key={item.id}
-              className="flex gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100 mb-4 hover:shadow-md transition-shadow"
-            >
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-24 h-24 object-cover rounded-lg"
-              />
-              <div className="flex-1">
-                <h3 className="font-semibold">{item.name}</h3>
-                <p className="text-sm text-gray-500">{item.category}</p>
-                <p className="text-[#f2592b] font-bold mt-1">
-                  ₦{item.price.toLocaleString()}
-                </p>
+          {items.map((line) => {
+            const price = Number(line.product.price);
+            const inStock = line.quantity < line.product.quantity;
+            const atMax = line.quantity >= line.product.quantity;
 
-                <div className="flex items-center gap-4 mt-2">
-                  <div className="flex items-center gap-1">
+            return (
+              <div
+                key={line.id}
+                className="flex gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100 mb-4 hover:shadow-md transition-shadow"
+              >
+                <div className="w-24 h-24 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
+                  <img
+                    src={
+                      line?.product.images?.[0]?.url ||
+                      "https://res.cloudinary.com/dx99hljwc/image/upload/v1785579785/wxyz/1785579782019_wxyz_logo.png"
+                    }
+                    alt={line?.product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">{line.product.name}</h3>
+                  {line.product.description && (
+                    <p className="text-sm text-gray-500">
+                      {line.product.description}
+                    </p>
+                  )}
+                  <p className="text-[#f2592b] font-bold mt-1">
+                    ₦{price.toLocaleString()}
+                  </p>
+
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() =>
+                          handleUpdateQuantity(line, line.quantity - 1)
+                        }
+                        className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        disabled={line.quantity <= 1}
+                      >
+                        <FaMinus />
+                      </button>
+                      <span className="w-10 text-center font-medium">
+                        {line.quantity}
+                      </span>
+                      <button
+                        onClick={() =>
+                          handleUpdateQuantity(line, line.quantity + 1)
+                        }
+                        className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        disabled={atMax}
+                      >
+                        <FaPlus />
+                      </button>
+                    </div>
                     <button
-                      onClick={() =>
-                        handleUpdateQuantity(item, item.quantity - 1)
-                      }
-                      className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-sm transition-colors"
-                      disabled={item.quantity <= 1}
+                      onClick={() => handleRemoveItem(line)}
+                      className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1"
                     >
-                      <FaMinus />
-                    </button>
-                    <span className="w-10 text-center font-medium">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() =>
-                        handleUpdateQuantity(item, item.quantity + 1)
-                      }
-                      className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-sm transition-colors"
-                      disabled={item.quantity >= item.maxStock}
-                    >
-                      <FaPlus />
+                      <FaTrash /> Remove
                     </button>
                   </div>
-                  <button
-                    onClick={() => handleRemoveItem(item)}
-                    className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1"
-                  >
-                    <FaTrash /> Remove
-                  </button>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-lg">
+                    ₦{(price * line.quantity).toLocaleString()}
+                  </p>
+                  {inStock ? (
+                    <span className="text-xs text-green-600">In Stock</span>
+                  ) : (
+                    <span className="text-xs text-red-500">
+                      Max quantity reached
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-lg">
-                  ₦{(item.price * item.quantity).toLocaleString()}
-                </p>
-                {item.quantity < item.maxStock ? (
-                  <span className="text-xs text-green-600">In Stock</span>
-                ) : (
-                  <span className="text-xs text-red-500">
-                    Max quantity reached
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Order Summary */}
@@ -161,44 +252,24 @@ export const CartPage: React.FC = () => {
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">
-                  Subtotal ({state.totalItems} items)
+                  Subtotal ({totalItems} items)
                 </span>
                 <span className="font-medium">
-                  ₦{state.subtotal.toLocaleString()}
+                  ₦{subtotal.toLocaleString()}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Shipping</span>
-                <span className="font-medium">
-                  {state.shipping === 0
-                    ? "Free"
-                    : `₦${state.shipping.toLocaleString()}`}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Tax (7.5%)</span>
-                <span className="font-medium">
-                  ₦{state.tax.toLocaleString()}
-                </span>
-              </div>
-              {state.discount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Discount</span>
-                  <span>-₦{state.discount.toLocaleString()}</span>
-                </div>
-              )}
               <div className="border-t border-gray-200 pt-3 mt-3">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span className="text-[#f2592b]">
-                    ₦{state.total.toLocaleString()}
+                    ₦{subtotal.toLocaleString()}
                   </span>
                 </div>
               </div>
             </div>
 
             <button
-              onClick={() => navigate("/checkout")}
+              onClick={handleCheckoutClick}
               className="w-full mt-6 bg-[#f2592b] text-white py-3 rounded-xl font-semibold hover:bg-[#e04a1f] transition-colors"
             >
               Proceed to Checkout
@@ -214,6 +285,13 @@ export const CartPage: React.FC = () => {
         type={notification.type}
         item={notification.item}
         message={notification.message}
+      />
+
+      {/* Auth Prompt */}
+      <AuthPromptModal
+        isOpen={showAuthPrompt}
+        onClose={() => setShowAuthPrompt(false)}
+        message="Sign in to proceed to checkout."
       />
     </div>
   );

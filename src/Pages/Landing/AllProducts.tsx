@@ -3,71 +3,101 @@ import { useNavigate } from "react-router-dom";
 import ProductCard from "../../Components/ProductCard";
 import { userProductService } from "../../services/Users/product/userProductService";
 import { CartNotificationModal } from "../../Components/CartNotificationModal";
-import { useCart } from "../../Context/cart/useCart";
-
-
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../store/store";
+import {
+  fetchProductFailure,
+  fetchProductStart,
+  fetchProductSuccess,
+} from "../../store/Users/products/productSlice";
+import { addProductToCartAction } from "../../store/Users/cart/cartAction";
+import type { Product } from "../../Types/Admin/product";
+import { useAuth } from "../../Context/Auth/useAuth";
+import { AuthPromptModal } from "../../Components/AuthPromptModal";
 
 const PREVIEW_LIMIT = 8;
 
 const AllProducts = () => {
   const navigate = useNavigate();
-  const { dispatch } = useCart();
-
+  const { user } = useAuth();
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [notification, setNotification] = useState({
     open: false,
-    type: "ADD" as "ADD",
+    type: "ADD" as "ADD" | "ERROR",
     item: undefined as any,
+    message: "",
   });
-  const [products, setProducts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // tracks which product id is currently being added, so we can
+  // disable/spin just that card instead of a global loading flag
+  const [addingProductId, setAddingProductId] = useState<string | null>(null);
+
+  const dispatch = useDispatch<AppDispatch>();
+  const fetchedRecord = useSelector(
+    (state: RootState) => state.getProduct.listRecords,
+  );
+  const fetchedLoading = useSelector(
+    (state: RootState) => state.getProduct.loading,
+  );
+  const error = useSelector((state: RootState) => state.getProduct.error);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      setIsLoading(true);
-      try {
-        const res: any = await userProductService.getAll();
-        // console.log("Fetched products:", res);
-        setProducts(res.products.filter((p: any) => p.status === "ACTIVE"));
-      } catch (err) {
-        console.error("Error fetching products:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProducts();
-  }, []);
+    if (!fetchedLoading) fetchProduct();
+  }, [dispatch]);
 
-  const previewProducts = products.slice(0, PREVIEW_LIMIT);
+  const fetchProduct = async () => {
+    dispatch(fetchProductStart());
+    try {
+      const data = await userProductService.getAll();
+      dispatch(fetchProductSuccess(data?.products));
+    } catch (err) {
+      dispatch(fetchProductFailure((err as Error).message));
+    }
+  };
+
+  const previewProducts = fetchedRecord.slice(0, PREVIEW_LIMIT);
 
   const handleViewProduct = (product: any) => {
     navigate(`/products/${product.id}`);
   };
 
-  const handleAddToCart = (product: any) => {
-    const cartItem = {
-      id: `cart_${Date.now()}_${product.id}`,
-      productId: product.id,
-      name: product.name,
-      price: Number(product.price),
-      quantity: 1,
-      image:
-        product.images?.[0]?.url ??
-        "https://res.cloudinary.com/dx99hljwc/image/upload/v1785579785/wxyz/1785579782019_wxyz_logo.png",
-      category: product.category?.name ?? "Uncategorized",
-      maxStock: product.quantity || 1,
-    };
+  const handleAddToCart = async (product: Product) => {
+    if (!user) {
+      setShowAuthPrompt(true);
+      return;
+    }
+    if (addingProductId === product.id) return;
 
-    dispatch({
-      type: "ADD_ITEM",
-      payload: cartItem,
-    });
+    setAddingProductId(product.id);
+    try {
+      await dispatch(addProductToCartAction(product, 1));
 
-    setNotification({
-      open: true,
-      type: "ADD",
-      item: cartItem,
-    });
+      setNotification({
+        open: true,
+        type: "ADD",
+        item: {
+          name: product.name,
+          quantity: 1,
+          price:
+            typeof product.price === "string"
+              ? parseFloat(product.price)
+              : product.price,
+          image: product.images?.[0]?.url,
+        },
+        message: `${product.name} added to cart!`,
+      });
+    } catch (err) {
+      setNotification({
+        open: true,
+        type: "ERROR",
+        item: undefined,
+        message: "Could not add item to cart. Please try again.",
+      });
+    } finally {
+      setAddingProductId(null);
+    }
   };
+
   return (
     <>
       <div className="w-full flex justify-center my-8 px-2">
@@ -79,24 +109,10 @@ const AllProducts = () => {
                 Discover our latest arrivals
               </p>
             </div>
-            {/* <button
-            onClick={() => navigate("/products")}
-            className="flex items-center gap-1.5 text-sm font-medium text-[#f2592b] hover:gap-2.5 transition-all"
-          >
-            View All
-            <FaArrowRight className="text-xs" />
-          </button> */}
           </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {Array.from({ length: PREVIEW_LIMIT }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl bg-gray-100 animate-pulse aspect-3/4"
-                />
-              ))}
-            </div>
+          {error ? (
+            <div className="text-center text-red-400 py-12">{error}</div>
           ) : previewProducts.length === 0 ? (
             <div className="text-center text-gray-400 py-12">
               No products available yet.
@@ -105,10 +121,11 @@ const AllProducts = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {previewProducts.map((product) => (
                 <ProductCard
-                  key={product.id}
+                  key={product?.id}
                   product={product}
                   onClick={handleViewProduct}
                   onAddToCart={handleAddToCart}
+                  isAddingToCart={addingProductId === product.id}
                 />
               ))}
             </div>
@@ -125,6 +142,13 @@ const AllProducts = () => {
         }
         type={notification.type}
         item={notification.item}
+        message={notification.message}
+      />
+
+      <AuthPromptModal
+        isOpen={showAuthPrompt}
+        onClose={() => setShowAuthPrompt(false)}
+        message="Sign in to proceed to checkout."
       />
     </>
   );

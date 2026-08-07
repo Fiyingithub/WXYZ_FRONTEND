@@ -1,8 +1,8 @@
-// ============================================
-// UPDATED NAVBAR WITH CART INTEGRATION
-// ============================================
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from '../store/store';
+import { getCartAction } from '../store/Users/cart/cartAction';
 
 // Icons
 import { FaUserCircle, FaSignOutAlt, FaClipboardList, FaHeart } from "react-icons/fa";
@@ -14,24 +14,33 @@ import { HiOutlineUserGroup } from "react-icons/hi";
 
 import logo from '../Asset/images/wxyz_logo.png';
 import { useAuth } from '../Context/Auth/useAuth';
-import { useCart } from '../Context/cart/useCart';
-
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { state } = useCart(); // Get cart state
-  
+  const dispatch = useDispatch<AppDispatch>();
+
+  // Cart count now comes from the same Redux slice AllProducts/ProductDetails/
+  // CartPage read and write, instead of the separate cart Context — so the
+  // badge stays in sync no matter where an item was added or removed.
+  const cartCount = useSelector((state: RootState) => state.getCart.totalItems);
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Get cart count from context instead of static value
-  const cartCount = state.totalItems; // This will update in real-time
-  
+
   const profileRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Hydrate the cart on first load (and whenever the user logs in) since
+  // Navbar mounts once for the whole app and needs an accurate count
+  // before any product page has dispatched anything.
+  useEffect(() => {
+    if (user) {
+      dispatch(getCartAction());
+    }
+  }, [dispatch, user]);
 
   // Handle click outside to close dropdowns
   useEffect(() => {
@@ -138,7 +147,7 @@ const Navbar = () => {
               <IoSearch className="text-xl" />
             </button>
 
-            {/* Cart - Now connected to real cart state */}
+            {/* Cart - Now connected to Redux cart state */}
             <Link 
               to="/cart" 
               className="relative p-2 text-gray-600 hover:text-[#f2592b] transition-colors"

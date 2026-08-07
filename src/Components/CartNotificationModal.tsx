@@ -33,12 +33,12 @@ export const CartNotificationModal: React.FC<CartNotificationModalProps> = ({
     setIsVisible(isOpen);
   }, [isOpen]);
 
-  // Auto-close after 3 seconds for success notifications
+  // Auto-close after1.5 seconds for success notifications
   useEffect(() => {
     if (isOpen && (type === 'ADD' || type === 'REMOVE')) {
       const timer = setTimeout(() => {
         onClose();
-      }, 3000);
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [isOpen, type, onClose]);
