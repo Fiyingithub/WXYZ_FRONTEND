@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FaRegHeart, FaChevronDown, FaShoppingCart } from "react-icons/fa";
+import { FaChevronDown } from "react-icons/fa";
 import { userProductService } from "../services/Users/product/userProductService";
-import { useCart } from "../Context/cart/useCart";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../store/store";
+import { addProductToCartAction } from "../store/Users/cart/cartAction";
 import { CartNotificationModal } from "../Components/CartNotificationModal";
+import ProductCard from "../Components/ProductCard";
+import { AuthPromptModal } from "../Components/AuthPromptModal";
+import { useAuth } from "../Context/Auth/useAuth";
 
 // Types
 interface Product {
@@ -34,8 +39,9 @@ function SortedProductDisplay() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const categoryId = searchParams.get("categoryId"); // Get categoryId from query params
-
-  const { dispatch } = useCart();
+  const { user } = useAuth();
+    const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -45,6 +51,7 @@ function SortedProductDisplay() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("Newest");
+  const [addingProductId, setAddingProductId] = useState<string | null>(null);
   const [notification, setNotification] = useState({
     open: false,
     type: "ADD" as "ADD" | "UPDATE" | "REMOVE" | "ERROR",
@@ -120,7 +127,6 @@ function SortedProductDisplay() {
           }
         }
 
-
         // Filter by status
         const activeProducts = allProducts.filter(
           (product) => product.status === "ACTIVE",
@@ -178,30 +184,46 @@ function SortedProductDisplay() {
     navigate(`/products/${product.id}`);
   };
 
-  const handleAddToCart = (product: Product) => {
-    const cartItem = {
-      id: `cart_${Date.now()}_${product.id}`,
-      productId: product.id,
-      name: product.name,
-      price:
-        typeof product.price === "string"
-          ? parseFloat(product.price)
-          : product.price,
-      quantity: 1,
-      image:
-        product.images?.[0]?.url ||
-        "https://res.cloudinary.com/dx99hljwc/image/upload/v1785579785/wxyz/1785579782019_wxyz_logo.png",
-      category: product.category?.name || "Uncategorized",
-      maxStock: product.quantity || 10,
-    };
+  const handleAddToCart = async (product: Product) => {
+    if (!user) {
+      setShowAuthPrompt(true);
+      return;
+    }
+    if (addingProductId === product.id) return;
 
-    dispatch({ type: "ADD_ITEM", payload: cartItem });
-    setNotification({
-      open: true,
-      type: "ADD",
-      item: cartItem,
-      message: `${product.name} added to cart!`,
-    });
+    setAddingProductId(product.id);
+    try {
+      // NOTE: addProductToCartAction expects Types/Admin/product's `Product`
+      // shape (see toCartProduct in cartAction.ts). This file's local
+      // `Product` interface may not structurally match it (e.g. `category`
+      // object vs `categoryId`) — revisit once Types/Admin/product.ts is
+      // confirmed, may need a small mapper here too.
+      await dispatch(addProductToCartAction(product as any, 1));
+
+      setNotification({
+        open: true,
+        type: "ADD",
+        item: {
+          name: product.name,
+          quantity: 1,
+          price:
+            typeof product.price === "string"
+              ? parseFloat(product.price)
+              : product.price,
+          image: product.images?.[0]?.url,
+        },
+        message: `${product.name} added to cart!`,
+      });
+    } catch (err) {
+      setNotification({
+        open: true,
+        type: "ERROR",
+        item: null,
+        message: "Could not add item to cart. Please try again.",
+      });
+    } finally {
+      setAddingProductId(null);
+    }
   };
 
   const handleCategoryChange = (categoryId: string) => {
@@ -212,17 +234,6 @@ function SortedProductDisplay() {
       // Navigate with query parameter
       navigate(`/products?categoryId=${categoryId}`);
     }
-  };
-
-  // Format currency
-  const formatAmount = (amt: number | string): string => {
-    const num = typeof amt === "string" ? parseFloat(amt) : amt;
-    return (
-      num
-        ?.toFixed(2)
-        ?.toString()
-        ?.replace(/\B(?=(\d{3})+(?!\d))/g, ",") || "0.00"
-    );
   };
 
   // Get category display name
@@ -323,62 +334,13 @@ function SortedProductDisplay() {
         {sortedProducts.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
             {sortedProducts.map((product) => (
-              <div
+              <ProductCard
                 key={product.id}
-                className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
+                product={product as any}
                 onClick={() => handleViewProduct(product)}
-              >
-                {/* Product Image */}
-                <div className="relative aspect-square bg-gray-50 overflow-hidden">
-                  <img
-                    src={
-                      product.images?.[0]?.url ||
-                      "https://res.cloudinary.com/dx99hljwc/image/upload/v1785579785/wxyz/1785579782019_wxyz_logo.png"
-                    }
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <button
-                    className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Wishlist logic
-                    }}
-                  >
-                    <FaRegHeart className="text-[#f2592b]" />
-                  </button>
-                </div>
-
-                {/* Product Info */}
-                <div className="p-3">
-                  {product.category && (
-                    <span className="text-xs text-[#f2592b] font-medium">
-                      {product.category.name}
-                    </span>
-                  )}
-                  <h3 className="text-sm font-semibold text-gray-900 mt-1 truncate">
-                    {product.name}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                    {product.description || "No description"}
-                  </p>
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-lg font-bold text-gray-900">
-                      ₦{formatAmount(product.price)}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddToCart(product);
-                      }}
-                      className="bg-[#f2592b] text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-[#e04a1f] transition-colors flex items-center gap-1"
-                    >
-                      <FaShoppingCart className="text-[10px]" />
-                      Add
-                    </button>
-                  </div>
-                </div>
-              </div>
+                onAddToCart={() => handleAddToCart(product)}
+                isAddingToCart={addingProductId === product.id}
+              />
             ))}
           </div>
         ) : (
@@ -409,6 +371,12 @@ function SortedProductDisplay() {
         type={notification.type}
         item={notification.item}
         message={notification.message}
+      />
+
+      <AuthPromptModal
+        isOpen={showAuthPrompt}
+        onClose={() => setShowAuthPrompt(false)}
+        message="Sign in to proceed to cart."
       />
     </div>
   );

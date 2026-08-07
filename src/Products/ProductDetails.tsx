@@ -15,10 +15,15 @@ import {
   FaChevronLeft,
   FaChevronRight,
 } from "react-icons/fa";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../store/store";
+import { addProductToCartAction } from "../store/Users/cart/cartAction";
+import { CartNotificationModal } from "../Components/CartNotificationModal";
 
 // Services
 import { userProductService } from "../services/Users/product/userProductService";
-
+import { useAuth } from "../Context/Auth/useAuth";
+import { AuthPromptModal } from "../Components/AuthPromptModal";
 
 // Types
 interface ProductImage {
@@ -62,6 +67,9 @@ interface RelatedProduct {
 const ProductDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>(); // Get ID from URL params
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useAuth();
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   // State
   const [product, setProduct] = useState<Product | null>(null);
@@ -74,6 +82,13 @@ const ProductDetails = () => {
     "description" | "specifications" | "reviews"
   >("description");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [notification, setNotification] = useState({
+    open: false,
+    type: "ADD" as "ADD" | "UPDATE" | "REMOVE" | "ERROR",
+    item: null as any,
+    message: "",
+  });
 
   // Colors for product variants
   const colors = [
@@ -203,13 +218,56 @@ const ProductDetails = () => {
     setCurrentImageIndex(index);
   };
 
-  const handleAddToCart = () => {
-    // Add to cart logic
-    navigate("/cart");
+  const handleAddToCart = async () => {
+    if (!user) {
+      setShowAuthPrompt(true);
+      return;
+    }
+    if (!product || addingToCart) return;
+
+    setAddingToCart(true);
+    try {
+      // NOTE: addProductToCartAction expects Types/Admin/product's `Product`
+      // shape (via toCartProduct in cartAction.ts). This file's local
+      // `Product` interface isn't confirmed to match it — cast for now,
+      // revisit once Types/Admin/product.ts is shared.
+      await dispatch(addProductToCartAction(product as any, quantity));
+
+      setNotification({
+        open: true,
+        type: "ADD",
+        item: {
+          name: product.name,
+          quantity,
+          price:
+            typeof product.price === "string"
+              ? parseFloat(product.price)
+              : product.price,
+          image: product.images?.[0]?.url,
+        },
+        message: `${product.name} added to cart!`,
+      });
+    } catch (err) {
+      setNotification({
+        open: true,
+        type: "ERROR",
+        item: null,
+        message: "Could not add item to cart. Please try again.",
+      });
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
-  const handleBuyNow = () => {
-    // Buy now logic
+  // Buy Now adds the item then heads straight to checkout.
+  // (Previously this just navigated without adding anything to the cart.)
+  const handleBuyNow = async () => {
+    if (!user) {
+      setShowAuthPrompt(true);
+      return;
+    }
+    if (!product || addingToCart) return;
+    await handleAddToCart();
     navigate("/checkout");
   };
 
@@ -321,7 +379,9 @@ const ProductDetails = () => {
             {product.category?.name || "Category"}
           </span>
           <span className="mx-2">/</span>
-          <span className="text-gray-900 font-medium border-b border-orange-600">{product.name}</span>
+          <span className="text-gray-900 font-medium border-b border-orange-600">
+            {product.name}
+          </span>
         </div>
       </div>
 
@@ -475,16 +535,18 @@ const ProductDetails = () => {
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleBuyNow}
-                  className="bg-green-600 cursor-pointer text-white px-8 py-3.5 rounded-lg hover:bg-green-700 transition-colors font-medium flex-1 flex items-center justify-center gap-2"
+                  disabled={!isInStock || addingToCart}
+                  className="bg-green-600 cursor-pointer text-white px-8 py-3.5 rounded-lg hover:bg-green-700 transition-colors font-medium flex-1 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <FaShoppingBag />
                   Buy Now
                 </button>
                 <button
                   onClick={handleAddToCart}
-                  className="bg-gray-200 cursor-pointer text-gray-800 px-8 py-3.5 rounded-lg hover:bg-gray-300 transition-colors font-medium flex-1 flex items-center justify-center gap-2"
+                  disabled={!isInStock || addingToCart}
+                  className="bg-gray-200 cursor-pointer text-gray-800 px-8 py-3.5 rounded-lg hover:bg-gray-300 transition-colors font-medium flex-1 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Add to Cart
+                  {addingToCart ? "Adding..." : "Add to Cart"}
                 </button>
                 <button className="p-3.5 border cursor-pointer border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                   <FaHeart className="text-gray-600 hover:text-red-500 transition-colors" />
@@ -690,6 +752,21 @@ const ProductDetails = () => {
           )}
         </div>
       </div>
+
+      {/* Notification Modal */}
+      <CartNotificationModal
+        isOpen={notification.open}
+        onClose={() => setNotification({ ...notification, open: false })}
+        type={notification.type}
+        item={notification.item}
+        message={notification.message}
+      />
+
+      <AuthPromptModal
+        isOpen={showAuthPrompt}
+        onClose={() => setShowAuthPrompt(false)}
+        message="Sign in to proceed to cart."
+      />
     </div>
   );
 };

@@ -1,11 +1,15 @@
 
 import { combineReducers } from "@reduxjs/toolkit";
 
-// import guardianSlice from './Guardian/guardianSlice'
+import productSlice from './Users/products/productSlice'
+import categorySlice from './Users/products/categorySlice'
+import cartSlice from './Users/cart/cartSlice'
 
 
 
 export const rootReducer = combineReducers({
-//   getGuardian: guardianSlice,
+  getProduct: productSlice,
+  getCategory: categorySlice,
+  getCart: cartSlice
   
 });

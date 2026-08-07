@@ -27,4 +27,5 @@ export interface Product {
   tags?: string[];
   weight?: number;
   discount?: number;
+  status: string
 }
