@@ -1,9 +1,13 @@
 import axios from "axios";
 import type { AxiosRequestConfig, AxiosRequestHeaders } from "axios";
 
+// const BASE_URL = "http://localhost:4000/api";
+const BASE_URL = "https://wxyz-backend.onrender.com/api";
+
+export const AUTH_LOGOUT_EVENT = "auth:logout";
+
 const api = axios.create({
-    // baseURL: "http://localhost:4000/api",
-    baseURL: "https://wxyz-backend.onrender.com/api",
+    baseURL: BASE_URL,
     withCredentials: true, // Important: sends refreshToken cookie
 });
 
@@ -126,10 +130,12 @@ api.interceptors.response.use(
             try {
 
 
-                // Call your refresh token endpoint
+                // Shares BASE_URL with the rest of the app, so the
+                // refreshToken cookie's origin always matches where
+                // it was issued.
                 const response = await axios.post(
 
-                    `https://wxyz-backend.onrender.com/api/user/refresh-token`,
+                    `${BASE_URL}/user/refresh-token`,
 
                     {},
 
@@ -146,10 +152,10 @@ api.interceptors.response.use(
 
 
 
-                console.log(
-                    "Token refreshed:",
-                    newAccessToken
-                );
+                // console.log(
+                //     "Token refreshed:",
+                //     newAccessToken
+                // );
 
 
 
@@ -197,9 +203,13 @@ api.interceptors.response.use(
                 );
 
 
-                localStorage.removeItem(
-                    "userToken"
-                );
+                localStorage.removeItem("userToken");
+                localStorage.removeItem("userRefreshToken");
+
+                // AuthProvider only reads localStorage once, on mount —
+                // without this, isAuthenticated/user stay stale in React
+                // state even though the session just died server-side.
+                window.dispatchEvent(new Event(AUTH_LOGOUT_EVENT));
 
 
                 return Promise.reject(
