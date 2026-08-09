@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 // import { useFlutterwave, closePaymentModal } from "flutterwave-react-v3";
@@ -6,11 +6,12 @@ import { useSelector, useDispatch } from "react-redux";
 // import { loadStripe } from "@stripe/stripe-js";
 import type { AppDispatch, RootState } from "../../store/store";
 import { userOrderService } from "../../services/Users/order/userOrderService";
-import { clearUserCartAction } from "../../store/Users/cart/cartAction";
+// import { clearUserCartAction } from "../../store/Users/cart/cartAction";
 import { AddressPickerModal } from "../../Components/AddressPickerModal";
 import { FaMapMarkerAlt, FaArrowLeft } from "react-icons/fa";
 import { useAuth } from "../../Context/Auth/useAuth";
-import type { Order } from "../../Types/user/order/orderType";
+import { fetchCartStart } from "../../store/Users/cart/cartSlice";
+// import type { Order } from "../../Types/user/order/orderType";
 
 
 // const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
@@ -41,21 +42,21 @@ const CheckoutPage = () => {
   // preference, or something else.
   const isNigeria = selectedAddress?.country?.toLowerCase() === "nigeria";
 
-  const flutterwaveConfig = (order: Order) => ({
-    public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY as string,
-    tx_ref: order.id,
-    amount: order.amount,
-    currency: "NGN",
-    payment_options: "card,ussd,banktransfer",
-    customer: {
-      email: user?.email ?? "",
-      name: user?.username ?? "",
-    },
-    customizations: {
-      title: "WXYZ Checkout",
-      description: `Payment for order ${order.id}`,
-    },
-  });
+  // const flutterwaveConfig = (order: Order) => ({
+  //   public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY as string,
+  //   tx_ref: order.id,
+  //   amount: order.amount,
+  //   currency: "NGN",
+  //   payment_options: "card,ussd,banktransfer",
+  //   customer: {
+  //     email: user?.email ?? "",
+  //     name: user?.username ?? "",
+  //   },
+  //   customizations: {
+  //     title: "WXYZ Checkout",
+  //     description: `Payment for order ${order.id}`,
+  //   },
+  // });
 
   // const handleFlutterwavePayment = useFlutterwave(
   //   // useFlutterwave needs a config object up front; we pass a placeholder
@@ -63,59 +64,64 @@ const CheckoutPage = () => {
   //   { public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY as string } as any,
   // );
 
-  const payWithFlutterwave = (order: Order) => {
-    // handleFlutterwavePayment({
-    //   ...flutterwaveConfig(order),
-    //   callback: async (response: any) => {
-    //     closePaymentModal();
-    //     if (response.status === "successful") {
-    //       await confirmAndFinish(order.id, String(response.transaction_id));
-    //     } else {
-    //       setError("Payment was not completed. Please try again.");
-    //       setPlacingOrder(false);
-    //     }
-    //   },
-    //   onClose: () => {
-    //     setPlacingOrder(false);
-    //   },
-    // } as any);
-  };
+  // const payWithFlutterwave = (order: Order) => {
+  //   // handleFlutterwavePayment({
+  //   //   ...flutterwaveConfig(order),
+  //   //   callback: async (response: any) => {
+  //   //     closePaymentModal();
+  //   //     if (response.status === "successful") {
+  //   //       await confirmAndFinish(order.id, String(response.transaction_id));
+  //   //     } else {
+  //   //       setError("Payment was not completed. Please try again.");
+  //   //       setPlacingOrder(false);
+  //   //     }
+  //   //   },
+  //   //   onClose: () => {
+  //   //     setPlacingOrder(false);
+  //   //   },
+  //   // } as any);
+  // };
 
-  const payWithStripe = async (order: Order) => {
-    // const stripe = await stripePromise;
-    const stripe = 'stripe';
-    if (!stripe) {
-      setError("Payment provider failed to load.");
-      setPlacingOrder(false);
-      return;
-    }
+  // const payWithStripe = async (order: Order) => {
+  //   // const stripe = await stripePromise;
+  //   const stripe = 'stripe';
+  //   if (!stripe) {
+  //     setError("Payment provider failed to load.");
+  //     setPlacingOrder(false);
+  //     return;
+  //   }
 
-    // NOTE: Stripe Checkout normally needs a Checkout Session created
-    // server-side (never expose secret keys client-side). This assumes
-    // the order-creation response eventually includes a `checkoutUrl` for
-    // USD orders — add that field to the backend contract, or swap this
-    // for `stripe.redirectToCheckout({ sessionId })` if you return a
-    // session id instead of a full URL.
-    const checkoutUrl = (order as any).checkoutUrl;
-    if (!checkoutUrl) {
-      setError("Stripe checkout session missing from order response.");
-      setPlacingOrder(false);
-      return;
-    }
-    window.location.href = checkoutUrl;
-  };
+  //   // NOTE: Stripe Checkout normally needs a Checkout Session created
+  //   // server-side (never expose secret keys client-side). This assumes
+  //   // the order-creation response eventually includes a `checkoutUrl` for
+  //   // USD orders — add that field to the backend contract, or swap this
+  //   // for `stripe.redirectToCheckout({ sessionId })` if you return a
+  //   // session id instead of a full URL.
+  //   const checkoutUrl = (order as any).checkoutUrl;
+  //   if (!checkoutUrl) {
+  //     setError("Stripe checkout session missing from order response.");
+  //     setPlacingOrder(false);
+  //     return;
+  //   }
+  //   window.location.href = checkoutUrl;
+  // };
 
-  const confirmAndFinish = async (orderId: string, reference: string) => {
-    try {
-      await userOrderService.confirmPayment(orderId, reference);
-      await dispatch(clearUserCartAction());
-      navigate(`/order-confirmation/${orderId}`);
-    } catch (err) {
-      setError("Payment succeeded but confirmation failed. Contact support with your reference: " + reference);
-    } finally {
-      setPlacingOrder(false);
-    }
-  };
+  // const confirmAndFinish = async (orderId: string, reference: string) => {
+  //   try {
+  //     await userOrderService.confirmPayment(orderId, reference);
+  //     await dispatch(clearUserCartAction());
+  //     navigate(`/order-confirmation/${orderId}`);
+  //   } catch (err) {
+  //     setError("Payment succeeded but confirmation failed. Contact support with your reference: " + reference);
+  //   } finally {
+  //     setPlacingOrder(false);
+  //   }
+  // };
+
+
+  useEffect(() => {
+    dispatch(fetchCartStart());
+  }, [dispatch])
 
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
@@ -135,6 +141,7 @@ const CheckoutPage = () => {
           quantity: line.quantity,
         })),
       });
+      console.log("Order created:", order);
 
       if (isNigeria) {
         // payWithFlutterwave(order);

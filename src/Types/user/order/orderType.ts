@@ -11,7 +11,7 @@ export interface OrderItemInput {
 }
 
 export interface CreateOrderInput {
-  userId: string;
+  userId: string | undefined;
   items: OrderItemInput[];
 }
 
