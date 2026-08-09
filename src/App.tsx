@@ -20,10 +20,14 @@ import SortedProductDisplay from "./Products/SortedProductDisplay";
 import CustomerProfile from "./Pages/user/CustomerProfile";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import { CartPage } from "./Pages/Cart/CartPage";
-import { CheckoutPage } from "./Pages/Checkout/CheckoutPage";
 import { PaymentPage } from "./Pages/Payments/PaymentPage";
 import LandingPageLayout from "./Layouts/LandingPageLayout";
 import { NotFoundPage } from "./Pages/NotFoundPage";
+import AddressBook from "./Pages/user/AddressBook";
+import CheckoutPage from "./Pages/Checkout/CheckoutPage";
+import OrderHistory from "./Pages/user/OrderHistory";
+import OrderManagement from "./Admin/order/OrderManagement";
+import Profile from "./Pages/Profile";
 
 function App() {
   return (
@@ -34,13 +38,16 @@ function App() {
             <Route index element={<LandingPage />} />
             <Route path="/products" element={<SortedProductDisplay />} />
             <Route path="/products/:id" element={<ProductDetails />} />
-            <Route path="/profile" element={<CustomerProfile />} />
+            <Route path="/profile" element={<Profile />} />
 
             {/* Orders */}
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/payment" element={<PaymentPage />} />
             <Route path="*" element={<NotFoundPage />} />
+            <Route path="/account/addresses" element={<AddressBook />} />
+            <Route path="/orders" element={<OrderHistory />} />
+            {/* <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} /> */}
           </Route>
 
           <Route path="/signup" element={<SignupPage />} />
@@ -59,7 +66,8 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="dashboard/products" element={<AdminProduct />} />
             <Route path="dashboard/orders" element={<AdminOrder />} />
-            <Route path="dashboard/profile" element={<AdminProfile />} />
+            <Route path="dashboard/profile" element={<Profile />} />
+            <Route path="dashboard/orders" element={<OrderManagement />} />
           </Route>
         </Routes>
       </Router>

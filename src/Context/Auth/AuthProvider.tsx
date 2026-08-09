@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import { AuthContext } from "./auth-context";
-import type { UserData, AuthContextType  } from "./auth-types";
+import type { UserData, AuthContextType } from "./auth-types";
+import { AUTH_LOGOUT_EVENT } from "../../services/api";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,10 +34,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         // console.error("Error decoding token:", error);
         localStorage.removeItem("userToken");
-    
+
       }
     }
 
+  }, []);
+
+  // Listens for api.ts's interceptor announcing that a token refresh
+  // failed (session expired / revoked server-side). Without this,
+  // isAuthenticated stays true in React state even after localStorage
+  // has already been cleared, since this component otherwise only
+  // reads localStorage once, on mount.
+  useEffect(() => {
+    const handleForcedLogout = () => {
+      setUser(null);
+      setIsAuthenticated(false);
+    };
+
+    window.addEventListener(AUTH_LOGOUT_EVENT, handleForcedLogout);
+    return () => window.removeEventListener(AUTH_LOGOUT_EVENT, handleForcedLogout);
   }, []);
 
   // Define the login, cbtLogin, and logout functions
@@ -82,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 };
 
-  
+
  const logout = () => {
   localStorage.removeItem("userToken");
   localStorage.removeItem("userRefreshToken");
@@ -91,11 +107,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   setIsAuthenticated(false);
 };
 
+  // UpdateUser
+  const updateUser = (updated: UserData) => {
+    setUser(updated);
+  };
+
   const contextValue: AuthContextType = {
     isAuthenticated,
     user,
     login,
     logout,
+    updateUser
   };
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;

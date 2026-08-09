@@ -21,23 +21,31 @@ export const authService = {
         // console.log("Create User success:", res.data);
         return res.data;
       } catch (error: any) {
-        const msg = (error?.response as any)?.data?.message || error?.message || String(error);
-        console.error(" User login error:", msg);
+        
         throw error;
       }
     },
     
 
-  //   update: async (id, data) => {
-  //     try {
-  //       const res = await api.put(`/api/Teacher/UpdateTeacher/${id}`, data);
-  //       console.log("UpdateTeacher success:", res.data);
-  //       return res.data.data;
-  //     } catch (error) {
-  //       console.error("UpdateTeacher error:", error?.response?.data?.message || error.message);
-  //       throw error;
-  //     }
-  //   },
+    update: async (id: string, data: any) => {
+      try {
+        const res = await api.patch(`/user/${id}`, data);
+
+        return res.data.data;
+      } catch (error) {
+        
+        throw error;
+      }
+    },
+
+    getById: async (userId: string) => {
+      try {
+        const res = await api.get(`/user/${userId}`);
+        return res.data.data;
+      } catch (error: any) {
+        throw error;
+      }
+    },
 
   //   getById: async (id) => {
   //     try {

@@ -48,7 +48,7 @@ const FeaturedProduct = () => {
     if (isAutoPlaying) {
       interval = setInterval(() => {
         changeSlide('next');
-      }, 2000);
+      }, 5000);
     }
     return () => clearInterval(interval);
   }, [isAutoPlaying, products.length]);
@@ -91,7 +91,7 @@ const FeaturedProduct = () => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="bg-linear-to-br from-primary to-[orange] justify-center items-center container max-w-275 h-[400px] flex relative overflow-hidden">
+      <div className="bg-linear-to-br from-primary to-[orange] justify-center items-center container max-w-275 lg:h-100 flex relative overflow-hidden">
         <div className="mx-auto container py-10 px-10 md:px-20 flex flex-col lg:flex-row gap-12 lg:items-center">
           {/* Left Content with smooth animations */}
           <div className="flex flex-col space-y-10 w-full lg:w-1/2">
@@ -188,7 +188,7 @@ const FeaturedProduct = () => {
         {/* Navigation Controls with hover animations */}
         <button 
           onClick={prevSlide}
-          className="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 bg-gray-500/10 hover:bg-gray-500/20 cursor-pointer hover:scale-110 rounded-full p-2 md:p-3 shadow-lg transition-all duration-300 z-10 backdrop-blur-sm"
+          className="hidden lg:block absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 bg-gray-500/10 hover:bg-gray-500/20 cursor-pointer hover:scale-110 rounded-full p-2 md:p-3 shadow-lg transition-all duration-300 z-10 backdrop-blur-sm"
           aria-label="Previous slide"
         >
           <svg className="w-4 h-4 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,7 +198,7 @@ const FeaturedProduct = () => {
         
         <button 
           onClick={nextSlide}
-          className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 bg-gray-500/10 hover:bg-gray-500/20 cursor-pointer  hover:scale-110 rounded-full p-2 md:p-3 shadow-lg transition-all duration-300 z-10 backdrop-blur-sm"
+          className="hidden lg:block absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 bg-gray-500/10 hover:bg-gray-500/20 cursor-pointer  hover:scale-110 rounded-full p-2 md:p-3 shadow-lg transition-all duration-300 z-10 backdrop-blur-sm"
           aria-label="Next slide"
         >
           <svg className="w-4 h-4 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

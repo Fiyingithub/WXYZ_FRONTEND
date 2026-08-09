@@ -5,7 +5,7 @@ import type { AppDispatch, RootState } from '../store/store';
 import { getCartAction } from '../store/Users/cart/cartAction';
 
 // Icons
-import { FaUserCircle, FaSignOutAlt, FaClipboardList, FaHeart } from "react-icons/fa";
+import { FaUserCircle, FaSignOutAlt, FaClipboardList } from "react-icons/fa";
 import { MdOutlineShoppingCart } from "react-icons/md";
 import { IoSearch } from "react-icons/io5";
 import { TiThMenu } from "react-icons/ti";
@@ -32,6 +32,24 @@ const Navbar = () => {
 
   const profileRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Display name: prefer a full name field if the user object has one,
+  // fall back to username so this still works if `name` isn't set.
+  const displayName = (user as any)?.name || user?.username || 'User';
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part: string) => part.charAt(0))
+    .join('')
+    .toUpperCase();
+
+  const hue = (() => {
+    const seed = user?.username || displayName;
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+    return Math.abs(hash) % 360;
+  })();
 
   // Hydrate the cart on first load (and whenever the user logs in) since
   // Navbar mounts once for the whole app and needs an accurate count
@@ -114,9 +132,9 @@ const Navbar = () => {
             <Link to="/products" className="text-gray-700 hover:text-[#f2592b] font-medium transition-colors">
               Shop
             </Link>
-            <Link to="/contact" className="text-gray-700 hover:text-[#f2592b] font-medium transition-colors">
+            {/* <Link to="/contact" className="text-gray-700 hover:text-[#f2592b] font-medium transition-colors">
               Contact
-            </Link>
+            </Link> */}
           </div>
 
           {/* Right Section */}
@@ -164,72 +182,131 @@ const Navbar = () => {
             <div className="relative" ref={profileRef}>
               {user ? (
                 <>
-                  {/* Logged In */}
+                  {/* Logged In — fancy trigger */}
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center space-x-2 p-1.5 rounded-full border border-[#f2592b]/10 bg-gray-50 hover:bg-gray-100 transition-colors"
+                    className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border transition-all duration-200 cursor-pointer ${
+                      isProfileOpen
+                        ? 'border-[#f2592b]/30 bg-orange-50'
+                        : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                    }`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-[#f2592b] text-white flex items-center justify-center">
-                      <span className="text-sm font-semibold uppercase">
-                        {user.username?.charAt(0) || 'U'}
-                      </span>
+                    <div className="relative shrink-0">
+                      <div
+                        className={`absolute -inset-0.5 rounded-full bg-linear-to-tr from-[#f2592b]/60 via-[#f2592b]/10 to-transparent transition-opacity duration-300 ${
+                          isProfileOpen ? 'opacity-100' : 'opacity-0'
+                        }`}
+                      />
+                      <div
+                        className="relative w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm ring-2 ring-white"
+                        style={{
+                          background: `linear-gradient(135deg, hsl(${hue}, 70%, 50%), hsl(${(hue + 45) % 360}, 70%, 40%))`,
+                        }}
+                      >
+                        <span className="text-xs font-semibold uppercase">
+                          {initials || 'U'}
+                        </span>
+                      </div>
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-gray-50" />
                     </div>
-                    <span className="hidden md:block text-sm font-medium text-gray-700">
-                      {user.username}
+                    <span className="hidden md:block text-sm font-medium text-gray-700 max-w-28 truncate">
+                      {displayName}
                     </span>
                   </button>
 
                   {/* Profile Dropdown */}
-                  {isProfileOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg ring-1 ring-black/5 py-1 overflow-hidden">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900">{user.username}</p>
-                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  <div
+                    className={`absolute right-0 mt-3 w-64 origin-top-right rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl ring-1 ring-black/5 overflow-hidden transition-all duration-200 ${
+                      isProfileOpen
+                        ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
+                        : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
+                    }`}
+                  >
+                    {/* Header card */}
+                    <div className="relative px-5 py-5 bg-linear-to-br from-[#f2592b] via-[#f2592b] to-[#c2410c] overflow-hidden">
+                      <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-white/10" />
+                      <div className="absolute -bottom-10 -left-6 w-24 h-24 rounded-full bg-white/5" />
+
+                      <div className="relative flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white text-lg ring-2 ring-white/60 shadow-lg shrink-0"
+                          style={{
+                            background: `linear-gradient(135deg, hsl(${hue}, 70%, 50%), hsl(${(hue + 45) % 360}, 70%, 40%))`,
+                          }}
+                        >
+                          {initials || <FaUserCircle className="text-2xl" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-base font-bold text-white truncate">{displayName}</p>
+                          {user.username && (
+                            <p className="text-xs text-white/80 truncate">@{user.username}</p>
+                          )}
+                          {user.email && (
+                            <p className="text-[11px] text-white/70 truncate">{user.email}</p>
+                          )}
+                        </div>
                       </div>
-                      
+                    </div>
+
+                    {/* Actions */}
+                    <div className="py-2">
                       <button
                         onClick={() => handleNavigation('/profile')}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#f2592b] transition-colors cursor-pointer group"
                       >
-                        <FaUserCircle className="text-lg text-gray-400" />
+                        <span className="w-8 h-8 rounded-lg bg-gray-50 group-hover:bg-orange-100 flex items-center justify-center transition-colors">
+                          <FaUserCircle className="text-base text-gray-400 group-hover:text-[#f2592b]" />
+                        </span>
                         My Profile
                       </button>
-                      
+
                       <button
                         onClick={() => handleNavigation('/orders')}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#f2592b] transition-colors cursor-pointer group"
                       >
-                        <FaClipboardList className="text-lg text-gray-400" />
+                        <span className="w-8 h-8 rounded-lg bg-gray-50 group-hover:bg-orange-100 flex items-center justify-center transition-colors">
+                          <FaClipboardList className="text-base text-gray-400 group-hover:text-[#f2592b]" />
+                        </span>
                         My Orders
                       </button>
-                      
-                      <button
+
+                      {/* <button
                         onClick={() => handleNavigation('/wishlist')}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#f2592b] transition-colors cursor-pointer group"
                       >
-                        <FaHeart className="text-lg text-gray-400" />
+                        <span className="w-8 h-8 rounded-lg bg-gray-50 group-hover:bg-orange-100 flex items-center justify-center transition-colors">
+                          <FaHeart className="text-base text-gray-400 group-hover:text-[#f2592b]" />
+                        </span>
                         Wishlist
-                      </button>
+                      </button> */}
 
                       {user.role === 'admin' && (
-                        <button
-                          onClick={() => handleNavigation('/admin')}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
-                        >
-                          <HiOutlineUserGroup className="text-lg text-gray-400" />
-                          Admin Dashboard
-                        </button>
+                        <>
+                          <div className="my-1 mx-4 border-t border-gray-100" />
+                          <button
+                            onClick={() => handleNavigation('/admin')}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#f2592b] transition-colors cursor-pointer group"
+                          >
+                            <span className="w-8 h-8 rounded-lg bg-gray-50 group-hover:bg-orange-100 flex items-center justify-center transition-colors">
+                              <HiOutlineUserGroup className="text-base text-gray-400 group-hover:text-[#f2592b]" />
+                            </span>
+                            Admin Dashboard
+                          </button>
+                        </>
                       )}
-                      
+
+                      <div className="my-1 mx-4 border-t border-gray-100" />
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-100"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors cursor-pointer group"
                       >
-                        <FaSignOutAlt className="text-lg" />
+                        <span className="w-8 h-8 rounded-lg bg-red-50 group-hover:bg-red-100 flex items-center justify-center transition-colors">
+                          <FaSignOutAlt className="text-base" />
+                        </span>
                         Sign Out
                       </button>
                     </div>
-                  )}
+                  </div>
                 </>
               ) : (
                 /* Not Logged In */
@@ -287,6 +364,25 @@ const Navbar = () => {
           className="lg:hidden bg-white border-t border-gray-100 shadow-lg"
         >
           <div className="px-4 py-4 space-y-3">
+            {user && (
+              <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white ring-2 ring-white shadow-sm shrink-0"
+                  style={{
+                    background: `linear-gradient(135deg, hsl(${hue}, 70%, 50%), hsl(${(hue + 45) % 360}, 70%, 40%))`,
+                  }}
+                >
+                  <span className="text-sm font-semibold uppercase">{initials || 'U'}</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{displayName}</p>
+                  {user.email && (
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             <Link 
               to="/" 
               className="block text-gray-700 hover:text-[#f2592b] font-medium transition-colors py-2 border-b border-gray-50"
@@ -302,19 +398,19 @@ const Navbar = () => {
               Shop
             </Link>
             <Link 
-              to="/about" 
+              to="/orders" 
               className="block text-gray-700 hover:text-[#f2592b] font-medium transition-colors py-2 border-b border-gray-50"
               onClick={() => setIsMenuOpen(false)}
             >
-              About
+              Orders
             </Link>
-            <Link 
+            {/* <Link 
               to="/contact" 
               className="block text-gray-700 hover:text-[#f2592b] font-medium transition-colors py-2 border-b border-gray-50"
               onClick={() => setIsMenuOpen(false)}
             >
               Contact
-            </Link>
+            </Link> */}
             
             {/* Show cart items count in mobile menu too */}
             {cartCount > 0 && (
@@ -324,6 +420,16 @@ const Navbar = () => {
                   {cartCount}
                 </span>
               </div>
+            )}
+
+            {user && (
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 justify-center text-red-500 font-medium py-2 border border-red-200 rounded-full hover:bg-red-50 transition-colors"
+              >
+                <FaSignOutAlt />
+                Sign Out
+              </button>
             )}
             
             {!user && (
