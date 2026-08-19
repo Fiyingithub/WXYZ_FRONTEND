@@ -5,13 +5,15 @@ export type OrderStatus =
   | "DELIVERED"
   | "CANCELLED";
 
+export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED";
+
 export interface OrderItemInput {
   productId: string;
   quantity: number;
 }
 
 export interface CreateOrderInput {
-  userId: string | undefined;
+  userId: string;
   items: OrderItemInput[];
 }
 
@@ -20,7 +22,7 @@ export interface OrderItem {
   orderId: string;
   productId: string;
   quantity: number;
-  price: string; // naira, as a string — matches product.price convention
+  price: string;
   product: {
     id: string;
     name: string;
@@ -34,14 +36,23 @@ export interface OrderItem {
   };
 }
 
-interface User {
-  email: string;
-  username: string;
+export interface OrderPayment {
   id: string;
-  name: string;
+  orderId: string;
+  status: PaymentStatus;
+  reference: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface OrderUser {
+  id: string;
+  email: string;
+  username: string;
+  name: string | null;
   role: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Order {
@@ -49,9 +60,10 @@ export interface Order {
   orderNumber: string;
   userId: string;
   status: OrderStatus;
-  totalAmount: string; // naira, as a string
+  totalAmount: string;
   createdAt: string;
+  updatedAt: string;
   items: OrderItem[];
-  user: User;
-  payment: unknown | null; // shape unknown — payment endpoint not confirmed yet
+  payment: OrderPayment | null;
+  user?: OrderUser;
 }

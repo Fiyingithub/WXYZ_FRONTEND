@@ -1,24 +1,17 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-// import { useFlutterwave, closePaymentModal } from "flutterwave-react-v3";
-
-// import { loadStripe } from "@stripe/stripe-js";
-import type { AppDispatch, RootState } from "../../store/store";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../store/store";
 import { userOrderService } from "../../services/Users/order/userOrderService";
-// import { clearUserCartAction } from "../../store/Users/cart/cartAction";
+// import { userPaymentService } from "../../services/Users/payment/userPaymentService";
 import { AddressPickerModal } from "../../Components/AddressPickerModal";
-import { FaMapMarkerAlt, FaArrowLeft } from "react-icons/fa";
+import { FaMapMarkerAlt, FaArrowLeft, FaLock } from "react-icons/fa";
 import { useAuth } from "../../Context/Auth/useAuth";
-import { fetchCartStart } from "../../store/Users/cart/cartSlice";
-// import type { Order } from "../../Types/user/order/orderType";
-
-
-// const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+import { userPaymentService } from "../../services/Users/payment/userPaymentService";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
+  // const dispatch = useDispatch<AppDispatch>();
   const { user } = useAuth();
 
   const cart = useSelector((state: RootState) => state.getCart.cart);
@@ -37,95 +30,13 @@ const CheckoutPage = () => {
 
   const items = cart?.items ?? [];
 
-  // Country decides the gateway: Nigeria → Flutterwave (NGN), else → Stripe (USD).
-  // Swap this single check if you'd rather route by currency, saved user
-  // preference, or something else.
-  const isNigeria = selectedAddress?.country?.toLowerCase() === "nigeria";
-
-  // const flutterwaveConfig = (order: Order) => ({
-  //   public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY as string,
-  //   tx_ref: order.id,
-  //   amount: order.amount,
-  //   currency: "NGN",
-  //   payment_options: "card,ussd,banktransfer",
-  //   customer: {
-  //     email: user?.email ?? "",
-  //     name: user?.username ?? "",
-  //   },
-  //   customizations: {
-  //     title: "WXYZ Checkout",
-  //     description: `Payment for order ${order.id}`,
-  //   },
-  // });
-
-  // const handleFlutterwavePayment = useFlutterwave(
-  //   // useFlutterwave needs a config object up front; we pass a placeholder
-  //   // and only actually invoke `initiatePayment` once we have a real order.
-  //   { public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY as string } as any,
-  // );
-
-  // const payWithFlutterwave = (order: Order) => {
-  //   // handleFlutterwavePayment({
-  //   //   ...flutterwaveConfig(order),
-  //   //   callback: async (response: any) => {
-  //   //     closePaymentModal();
-  //   //     if (response.status === "successful") {
-  //   //       await confirmAndFinish(order.id, String(response.transaction_id));
-  //   //     } else {
-  //   //       setError("Payment was not completed. Please try again.");
-  //   //       setPlacingOrder(false);
-  //   //     }
-  //   //   },
-  //   //   onClose: () => {
-  //   //     setPlacingOrder(false);
-  //   //   },
-  //   // } as any);
-  // };
-
-  // const payWithStripe = async (order: Order) => {
-  //   // const stripe = await stripePromise;
-  //   const stripe = 'stripe';
-  //   if (!stripe) {
-  //     setError("Payment provider failed to load.");
-  //     setPlacingOrder(false);
-  //     return;
-  //   }
-
-  //   // NOTE: Stripe Checkout normally needs a Checkout Session created
-  //   // server-side (never expose secret keys client-side). This assumes
-  //   // the order-creation response eventually includes a `checkoutUrl` for
-  //   // USD orders — add that field to the backend contract, or swap this
-  //   // for `stripe.redirectToCheckout({ sessionId })` if you return a
-  //   // session id instead of a full URL.
-  //   const checkoutUrl = (order as any).checkoutUrl;
-  //   if (!checkoutUrl) {
-  //     setError("Stripe checkout session missing from order response.");
-  //     setPlacingOrder(false);
-  //     return;
-  //   }
-  //   window.location.href = checkoutUrl;
-  // };
-
-  // const confirmAndFinish = async (orderId: string, reference: string) => {
-  //   try {
-  //     await userOrderService.confirmPayment(orderId, reference);
-  //     await dispatch(clearUserCartAction());
-  //     navigate(`/order-confirmation/${orderId}`);
-  //   } catch (err) {
-  //     setError("Payment succeeded but confirmation failed. Contact support with your reference: " + reference);
-  //   } finally {
-  //     setPlacingOrder(false);
-  //   }
-  // };
-
-
-  useEffect(() => {
-    dispatch(fetchCartStart());
-  }, [dispatch])
-
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
       setShowAddressPicker(true);
+      return;
+    }
+    if (!user?.email) {
+      setError("Missing account email — please sign in again.");
       return;
     }
     if (items.length === 0) return;
@@ -134,22 +45,28 @@ const CheckoutPage = () => {
     setError(null);
 
     try {
+      // Step 1: create the order
       const order = await userOrderService.create({
-        userId: user?.id, // confirm this field name on your `user` object from useAuth()
+        userId: user.id,
         items: items.map((line) => ({
           productId: line.productId,
           quantity: line.quantity,
         })),
       });
-      console.log("Order created:", order);
 
-      if (isNigeria) {
-        // payWithFlutterwave(order);
-      } else {
-        // await payWithStripe(order);
-      }
+      // Step 2: initialize payment for that order, get Paystack's
+      // hosted checkout URL, and redirect there. Cart is intentionally
+      // NOT cleared here — that should happen only after payment is
+      // confirmed on the verify page, otherwise a user who abandons
+      // the Paystack page loses their cart for nothing.
+      const paymentInit = await userPaymentService.initialize({
+        email: user.email,
+        orderId: order.id,
+      });
+
+      window.location.href = paymentInit.authorizationUrl;
     } catch (err) {
-      setError("Could not create your order. Please try again.");
+      setError("Could not start checkout. Please try again.");
       setPlacingOrder(false);
     }
   };
@@ -224,15 +141,12 @@ const CheckoutPage = () => {
         </div>
       </div>
 
-      {/* Payment method indicator */}
+      {/* Payment method */}
       <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
         <h2 className="font-semibold mb-2">Payment Method</h2>
         <p className="text-sm text-gray-500">
-          {selectedAddress
-            ? isNigeria
-              ? "Card, USSD, or bank transfer via Flutterwave (NGN)"
-              : "Card payment via Stripe (USD)"
-            : "Select a delivery address to see available payment options."}
+          Card, bank transfer, or USSD via Paystack — you'll be redirected to
+          complete payment securely.
         </p>
       </div>
 
@@ -245,9 +159,15 @@ const CheckoutPage = () => {
       <button
         onClick={handlePlaceOrder}
         disabled={placingOrder}
-        className="w-full bg-[#f2592b] text-white py-3.5 rounded-xl font-semibold hover:bg-[#e04a1f] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full bg-[#f2592b] text-white py-3.5 rounded-xl font-semibold hover:bg-[#e04a1f] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {placingOrder ? "Processing..." : `Place Order — ₦${subtotal.toLocaleString()}`}
+        {placingOrder ? (
+          "Redirecting to Paystack..."
+        ) : (
+          <>
+            <FaLock className="text-sm" /> Pay ₦{subtotal.toLocaleString()}
+          </>
+        )}
       </button>
 
       <AddressPickerModal
