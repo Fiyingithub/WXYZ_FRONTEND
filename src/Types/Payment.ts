@@ -1,66 +1,37 @@
 export type SupportedCurrency = "NGN" | "USD" | "GBP" | "GHS" | "KES" | "ZAR";
 
 export type PaymentProvider = "stripe" | "flutterwave" | "paystack";
-
-export interface CartItem {
+export interface PaymentOrderSummary {
   id: string;
-  productId: string;
-  name: string;
-  image: string;
-  /** Decimal major-unit price (e.g. 12.99, not cents) in the item's home currency */
-  price: number;
-  quantity: number;
-  variant?: string;
-  maxQuantity?: number;
+  orderNumber: string;
+  userId: string;
+  status: string;
+  totalAmount: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface ShippingAddress {
-  fullName: string;
+export interface Payment {
+  id: string;
+  orderId: string;
+  status: "PENDING" | "SUCCESS" | "FAILED"; // SUCCESS/FAILED assumed — confirm once verify response is shared
+  reference: string;
+  createdAt: string;
+  updatedAt: string;
+  order: PaymentOrderSummary;
+}
+
+export interface InitializePaymentInput {
   email: string;
-  phone: string;
-  country: string; // ISO 3166-1 alpha-2, e.g. "NG", "US", "GB"
-  state: string;
-  city: string;
-  addressLine1: string;
-  addressLine2?: string;
-  postalCode: string;
-}
-
-export interface OrderSummary {
-  subtotal: number;
-  shipping: number;
-  tax: number;
-  discount: number;
-  total: number;
-  currency: SupportedCurrency;
-}
-
-export interface CreateOrderPayload {
-  items: Pick<CartItem, "productId" | "quantity" | "variant">[];
-  shipping: ShippingAddress;
-  currency: SupportedCurrency;
-  provider: PaymentProvider;
-}
-
-export interface CreateOrderResponse {
   orderId: string;
-  reference: string;
-  summary: OrderSummary;
 }
 
-export interface PaymentInitPayload {
-  orderId: string;
+export interface InitializePaymentResponse {
+  payment: Payment;
   reference: string;
+  authorizationUrl: string;
+  accessCode: string;
   amount: number;
-  currency: SupportedCurrency;
-  email: string;
-  provider: PaymentProvider;
+  amountInKobo: number;
+  currency: string;
 }
-
-export interface PaymentVerifyPayload {
-  orderId: string;
-  reference: string;
-  provider: PaymentProvider;
-}
-
-export type PaymentStatus = "idle" | "processing" | "success" | "failed";

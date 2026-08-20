@@ -28,6 +28,8 @@ import CheckoutPage from "./Pages/Checkout/CheckoutPage";
 import OrderHistory from "./Pages/user/OrderHistory";
 import OrderManagement from "./Admin/order/OrderManagement";
 import Profile from "./Pages/Profile";
+import VerifyPayment from "./Pages/Payments/VerifyPayment";
+import OrderDetail from "./Pages/user/OrderDetail";
 
 function App() {
   return (
@@ -44,9 +46,11 @@ function App() {
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/payment" element={<PaymentPage />} />
+            <Route path="/payments/verify" element={<VerifyPayment />} />
             <Route path="*" element={<NotFoundPage />} />
             <Route path="/account/addresses" element={<AddressBook />} />
             <Route path="/orders" element={<OrderHistory />} />
+            <Route path="/orders/:orderId" element={<OrderDetail />} />
             {/* <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} /> */}
           </Route>
 

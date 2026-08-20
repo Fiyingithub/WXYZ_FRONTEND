@@ -1,8 +1,8 @@
 import axios from "axios";
 import type { AxiosRequestConfig, AxiosRequestHeaders } from "axios";
 
-// const BASE_URL = "http://localhost:4000/api";
-const BASE_URL = "https://wxyz-backend.onrender.com/api";
+const BASE_URL = "http://localhost:4000/api";
+// const BASE_URL = "https://wxyz-backend.onrender.com/api";
 
 export const AUTH_LOGOUT_EVENT = "auth:logout";
 
