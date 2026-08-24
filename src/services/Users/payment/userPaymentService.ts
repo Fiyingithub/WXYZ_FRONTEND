@@ -26,4 +26,20 @@ export const userPaymentService = {
       throw error;
     }
   },
+
+  initializeStripe: async (data: { email: string; orderId: string; }) => {
+  try {
+    const res = await api.post(
+      `${BASE_PATH}`,
+      {
+        ...data,
+        provider: "STRIPE",
+      }
+    );
+
+    return res.data.data;
+  } catch (error: any) {
+    throw error;
+  }
+},
 };

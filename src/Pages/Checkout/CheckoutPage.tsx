@@ -3,15 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../store/store";
 import { userOrderService } from "../../services/Users/order/userOrderService";
-// import { userPaymentService } from "../../services/Users/payment/userPaymentService";
 import { AddressPickerModal } from "../../Components/AddressPickerModal";
-import { FaMapMarkerAlt, FaArrowLeft, FaLock } from "react-icons/fa";
+import { FaMapMarkerAlt, FaArrowLeft, FaLock, FaCheckCircle } from "react-icons/fa";
 import { useAuth } from "../../Context/Auth/useAuth";
 import { userPaymentService } from "../../services/Users/payment/userPaymentService";
+import paystackLogo from '../../Asset/images/paystack1.png'
+import stripeLogo from '../../Asset/images/stripe3.png'
+
+type PaymentMethod = "paystack" | "stripe";
+
+
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  // const dispatch = useDispatch<AppDispatch>();
   const { user } = useAuth();
 
   const cart = useSelector((state: RootState) => state.getCart.cart);
@@ -27,6 +31,7 @@ const CheckoutPage = () => {
   const [showAddressPicker, setShowAddressPicker] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("paystack");
 
   const items = cart?.items ?? [];
 
@@ -54,17 +59,28 @@ const CheckoutPage = () => {
         })),
       });
 
-      // Step 2: initialize payment for that order, get Paystack's
-      // hosted checkout URL, and redirect there. Cart is intentionally
-      // NOT cleared here — that should happen only after payment is
-      // confirmed on the verify page, otherwise a user who abandons
-      // the Paystack page loses their cart for nothing.
-      const paymentInit = await userPaymentService.initialize({
-        email: user.email,
-        orderId: order.id,
-      });
+      // Step 2: initialize payment for that order with the chosen
+      // provider, get the hosted checkout URL, and redirect there.
+      // Cart is intentionally NOT cleared here — that should happen
+      // only after payment is confirmed on the verify page, otherwise
+      // a user who abandons the hosted checkout page loses their cart
+      // for nothing.
+      if (paymentMethod === "paystack") {
+        const paymentInit = await userPaymentService.initialize({
+          email: user.email,
+          orderId: order.id,
+        });
+        window.location.href = paymentInit.authorizationUrl;
+      } else {
+        const paymentInit =
+        await userPaymentService.initializeStripe({
+          email: user.email,
+          orderId: order.id,
+        });
 
-      window.location.href = paymentInit.authorizationUrl;
+        window.location.href =
+        paymentInit.checkoutUrl;
+      }
     } catch (err) {
       setError("Could not start checkout. Please try again.");
       setPlacingOrder(false);
@@ -143,11 +159,47 @@ const CheckoutPage = () => {
 
       {/* Payment method */}
       <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
-        <h2 className="font-semibold mb-2">Payment Method</h2>
-        <p className="text-sm text-gray-500">
-          Card, bank transfer, or USSD via Paystack — you'll be redirected to
-          complete payment securely.
+        <h2 className="font-semibold mb-3">Payment Method</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Choose how you'd like to pay. You'll be redirected to complete
+          payment securely.
         </p>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("paystack")}
+            aria-pressed={paymentMethod === "paystack"}
+            className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 transition-colors ${
+              paymentMethod === "paystack"
+                ? "border-[#f2592b] bg-[#fff4f0]"
+                : "border-gray-200 hover:border-gray-300"
+            }`}
+          >
+            {paymentMethod === "paystack" && (
+              <FaCheckCircle className="absolute top-2 right-2 text-[#f2592b]" />
+            )}
+            <img src={paystackLogo} alt="Paystack" className="h-20" />
+            {/* <span className="text-xs text-gray-500">Card, bank, USSD</span> */}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("stripe")}
+            aria-pressed={paymentMethod === "stripe"}
+            className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 transition-colors ${
+              paymentMethod === "stripe"
+                ? "border-[#f2592b] bg-[#fff4f0]"
+                : "border-gray-200 hover:border-gray-300"
+            }`}
+          >
+            {paymentMethod === "stripe" && (
+              <FaCheckCircle className="absolute top-2 right-2 text-[#f2592b]" />
+            )}
+            <img src={stripeLogo} alt="Stripe" className="h-20 w-full" />
+            {/* <span className="text-xs text-gray-500">Card payments</span> */}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -162,7 +214,7 @@ const CheckoutPage = () => {
         className="w-full bg-[#f2592b] text-white py-3.5 rounded-xl font-semibold hover:bg-[#e04a1f] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {placingOrder ? (
-          "Redirecting to Paystack..."
+          `Redirecting to ${paymentMethod === "paystack" ? "Paystack" : "Stripe"}...`
         ) : (
           <>
             <FaLock className="text-sm" /> Pay ₦{subtotal.toLocaleString()}
