@@ -5,6 +5,8 @@ import WaitingLoader from "../Loaders/WaitingLoader";
 import "react-toastify/dist/ReactToastify.css";
 import signupImage from "../Asset/images/signupImage.jpg";
 import { authService } from "../services/Admin/authService";
+import { handleApiError } from "../utils/handleApiError";
+import { toast } from "react-toastify";
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -69,7 +71,7 @@ const SignupPage = () => {
         navigate("/login");
       }
     } catch (error) {
-      console.log(error);
+      toast.error(handleApiError(error));
       stopWaitingLoader();
       // notifyError(error.response.data.responseMessage);
     }

@@ -7,6 +7,8 @@ import type { Category } from "../../Components/CategorySelect ";
 import { productService } from "../../services/Admin/product/productService";
 import { categoryService } from "../../services/Admin/product/categoryService";
 import { useToast } from "../../Loaders/ToastContext";
+import { handleApiError } from "../../utils/handleApiError";
+import { toast } from "react-toastify";
 
 export type PublishStatus = "draft" | "published";
 
@@ -185,6 +187,7 @@ const AdminProduct = () => {
         fetchCategories();
       }
     } catch (error) {
+      toast.error(handleApiError(error));
       notifyError("Error creating category");
     } finally {
       stopWaitingLoader();
@@ -200,6 +203,7 @@ const AdminProduct = () => {
         fetchCategories();
       }
     } catch (error) {
+      toast.error(handleApiError(error));
       notifyError("Error deleting category");
     } finally {
       stopWaitingLoader();
@@ -242,7 +246,7 @@ const AdminProduct = () => {
       setIsModalOpen(false);
       console.log("Product submitted successfully"); // Debug log
     } catch (error) {
-      console.error("Error submitting product:", error);
+      toast.error(handleApiError(error));
       notifyError(
         error instanceof Error ? error.message : "Error submitting product",
       );
@@ -263,6 +267,7 @@ const AdminProduct = () => {
         setIsModalOpen(false);
       }
     } catch (error) {
+      toast.error(handleApiError(error));
       notifyError("Error deleting product");
     } finally {
       stopWaitingLoader();
@@ -297,6 +302,7 @@ const AdminProduct = () => {
         );
       }
     } catch (error) {
+      toast.error(handleApiError(error));
       notifyError("Error updating status");
       // revert on failure
       setProducts((prev) =>

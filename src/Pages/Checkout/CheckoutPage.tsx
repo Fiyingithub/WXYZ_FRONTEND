@@ -9,6 +9,8 @@ import { useAuth } from "../../Context/Auth/useAuth";
 import { userPaymentService } from "../../services/Users/payment/userPaymentService";
 import paystackLogo from '../../Asset/images/paystack1.png'
 import stripeLogo from '../../Asset/images/stripe3.png'
+import { handleApiError } from "../../utils/handleApiError";
+import { toast } from "react-toastify";
 
 type PaymentMethod = "paystack" | "stripe";
 
@@ -82,7 +84,7 @@ const CheckoutPage = () => {
         paymentInit.checkoutUrl;
       }
     } catch (err) {
-      setError("Could not start checkout. Please try again.");
+     toast.error(handleApiError(err));
       setPlacingOrder(false);
     }
   };

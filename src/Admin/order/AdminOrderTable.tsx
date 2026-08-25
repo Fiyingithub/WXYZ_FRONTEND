@@ -5,6 +5,8 @@ import type { AppDispatch } from "../../store/store";
 import { getOrdersAction, updateOrderStatusAction } from "../../store/Users/order/orderAction";
 import Pagination from "../../Components/Pagination";
 import type { Order, OrderStatus } from "../../Types/user/order/orderType";
+import { handleApiError } from "../../utils/handleApiError";
+import { toast } from "react-toastify";
 
 interface AdminOrderTableProps {
   orders: Order[];
@@ -80,6 +82,7 @@ const AdminOrderTable = ({
       setJustUpdatedId(orderId);
       setTimeout(() => setJustUpdatedId((id) => (id === orderId ? null : id)), 1500);
     } catch (err) {
+      toast.error(handleApiError(err));
       setErrorId(orderId);
     } finally {
       setUpdatingId(null);

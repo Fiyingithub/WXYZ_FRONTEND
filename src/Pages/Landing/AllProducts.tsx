@@ -5,11 +5,7 @@ import { userProductService } from "../../services/Users/product/userProductServ
 import { CartNotificationModal } from "../../Components/CartNotificationModal";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
-import {
-  fetchProductFailure,
-  fetchProductStart,
-  fetchProductSuccess,
-} from "../../store/Users/products/productSlice";
+import { fetchProductFailure,fetchProductStart,fetchProductSuccess } from "../../store/Users/products/productSlice";
 import { addProductToCartAction } from "../../store/Users/cart/cartAction";
 import type { Product } from "../../Types/Admin/product";
 import { useAuth } from "../../Context/Auth/useAuth";
@@ -35,7 +31,8 @@ const AllProducts = () => {
   const dispatch = useDispatch<AppDispatch>();
   const fetchedRecord = useSelector(
     (state: RootState) => state.getProduct.listRecords,
-  );
+  ) || [];
+
   const fetchedLoading = useSelector(
     (state: RootState) => state.getProduct.loading,
   );
@@ -48,8 +45,8 @@ const AllProducts = () => {
   const fetchProduct = async () => {
     dispatch(fetchProductStart());
     try {
-      const data = await userProductService.getAll();
-      dispatch(fetchProductSuccess(data?.products));
+      const data = await userProductService.getAllActiveProduct();
+      dispatch(fetchProductSuccess(data));
     } catch (err) {
       dispatch(fetchProductFailure((err as Error).message));
     }

@@ -1,77 +1,158 @@
+// DashboardCards.tsx
 import type { IconType } from "react-icons";
 import {
   FaWallet,
-  FaArrowTrendUp,
-  FaArrowTrendDown,
-  FaPiggyBank,
   FaArrowUp,
   FaArrowDown,
+  FaClock,
+  FaSpinner,
+  FaUsers,
+  FaBox,
 } from "react-icons/fa6";
+import type { DashboardSummary } from "../services/Admin/AdminDashboardService";
+import { FaShoppingCart } from "react-icons/fa";
 
-interface CardData {
+interface DashboardCardsProps {
+  summary: DashboardSummary | null;
+  loading: boolean;
+}
+
+// Define the actual response structure
+interface DashboardSummaryResponse {
+  totalOrders: number;
+  pendingOrders: number;
+  processingOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  successfulPayments: number;
+  totalCustomers: number;
+  totalProducts: number;
+  totalRevenue: number;
+}
+
+// Map API fields to display cards
+interface CardConfig {
+  key: string;
   title: string;
-  amount: string;
-  trend: number;
   icon: IconType;
   accent: string;
   iconBg: string;
-  glow: string;
+  bar: string;
+  valueKey: keyof DashboardSummaryResponse;
+  showTrend?: boolean;
 }
 
-const data: CardData[] = [
+const CARD_CONFIG: CardConfig[] = [
   {
-    title: "Total Balance",
-    amount: "₦15,000",
-    trend: 12.4,
+    key: "totalRevenue",
+    title: "Total Revenue",
     icon: FaWallet,
     accent: "text-[#f2592b]",
     iconBg: "bg-[#f2592b]/10",
-    glow: "from-[#f2592b]/15",
+    bar: "bg-[#f2592b]",
+    valueKey: "totalRevenue",
   },
   {
-    title: "Income",
-    amount: "₦7,500",
-    trend: 8.1,
-    icon: FaArrowTrendUp,
-    accent: "text-emerald-600",
-    iconBg: "bg-emerald-50",
-    glow: "from-emerald-500/15",
+    key: "totalOrders",
+    title: "Total Orders",
+    icon: FaShoppingCart,
+    accent: "text-blue-600",
+    iconBg: "bg-blue-50",
+    bar: "bg-blue-500",
+    valueKey: "totalOrders",
   },
   {
-    title: "Expenses",
-    amount: "₦4,000",
-    trend: -3.2,
-    icon: FaArrowTrendDown,
-    accent: "text-rose-600",
-    iconBg: "bg-rose-50",
-    glow: "from-rose-500/15",
-  },
-  {
-    title: "Total Savings",
-    amount: "₦3,500",
-    trend: 5.6,
-    icon: FaPiggyBank,
+    key: "pendingOrders",
+    title: "Pending Orders",
+    icon: FaClock,
     accent: "text-amber-600",
     iconBg: "bg-amber-50",
-    glow: "from-amber-500/15",
+    bar: "bg-amber-500",
+    valueKey: "pendingOrders",
+  },
+  {
+    key: "totalCustomers",
+    title: "Total Customers",
+    icon: FaUsers,
+    accent: "text-emerald-600",
+    iconBg: "bg-emerald-50",
+    bar: "bg-emerald-500",
+    valueKey: "totalCustomers",
+  },
+  {
+    key: "processingOrders",
+    title: "Processing Orders",
+    icon: FaSpinner,
+    accent: "text-purple-600",
+    iconBg: "bg-purple-50",
+    bar: "bg-purple-500",
+    valueKey: "processingOrders",
+  },
+  {
+    key: "totalProducts",
+    title: "Total Products",
+    icon: FaBox,
+    accent: "text-rose-600",
+    iconBg: "bg-rose-50",
+    bar: "bg-rose-500",
+    valueKey: "totalProducts",
   },
 ];
 
-const DashboardCards = () => {
+const formatNaira = (value: number | undefined | null) =>
+  `₦${(value ?? 0).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
+
+const formatNumber = (value: number | undefined | null) =>
+  `${(value ?? 0).toLocaleString()}`;
+
+const CardSkeleton = () => (
+  <div className="rounded-[28px] bg-white p-6 ring-1 ring-black/5 shadow-[0_2px_20px_-4px_rgba(20,20,31,0.06)] animate-pulse">
+    <div className="flex items-start justify-between">
+      <div className="w-12 h-12 rounded-2xl bg-gray-100" />
+      <div className="w-14 h-6 rounded-full bg-gray-100" />
+    </div>
+    <div className="mt-6 h-3 w-20 bg-gray-100 rounded" />
+    <div className="mt-2 h-7 w-28 bg-gray-100 rounded" />
+  </div>
+);
+
+const DashboardCards = ({ summary, loading }: DashboardCardsProps) => {
+
+  if (loading || !summary) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {CARD_CONFIG.map((c) => (
+          <CardSkeleton key={c.key} />
+        ))}
+      </div>
+    );
+  }
+
+  // Cast summary to the response type
+  const data = summary as unknown as DashboardSummaryResponse;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {data.map((item, index) => {
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {CARD_CONFIG.map((item) => {
         const Icon = item.icon;
-        const isPositive = item.trend >= 0;
+        const value = data[item.valueKey] as number;
+        
+        // Determine if this is a revenue card (should show ₦)
+        const isRevenue = item.key === "totalRevenue";
+        const formattedValue = isRevenue ? formatNaira(value) : formatNumber(value);
+
+        // Generate a random trend for demo purposes (in real app, this would come from API)
+        const trend = Math.floor(Math.random() * 30) - 5; // -5% to 25%
+        const isPositive = trend >= 0;
 
         return (
           <div
-            key={index}
-            className="relative overflow-hidden rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+            key={item.key}
+            className="group relative overflow-hidden rounded-[28px] bg-white p-6 ring-1 ring-black/5 shadow-[0_2px_20px_-4px_rgba(20,20,31,0.06)] hover:shadow-[0_8px_30px_-6px_rgba(20,20,31,0.12)] hover:-translate-y-0.5 transition-all duration-300"
           >
-            {/* Decorative glow */}
+            {/* soft glow accent */}
             <div
-              className={`absolute -top-10 -right-10 w-32 h-32 rounded-full bg-linnear-to-br ${item.glow} to-transparent blur-2xl`}
+              className={`absolute -top-12 -right-12 w-36 h-36 rounded-full ${item.iconBg} opacity-60 blur-2xl group-hover:opacity-90 transition-opacity`}
             />
 
             <div className="relative flex items-start justify-between">
@@ -83,20 +164,36 @@ const DashboardCards = () => {
 
               <span
                 className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
-                  isPositive ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                  isPositive
+                    ? "bg-emerald-50 text-emerald-600"
+                    : "bg-rose-50 text-rose-600"
                 }`}
               >
-                {isPositive ? <FaArrowUp className="text-[10px]" /> : <FaArrowDown className="text-[10px]" />}
-                {Math.abs(item.trend)}%
+                {isPositive ? (
+                  <FaArrowUp className="text-[10px]" />
+                ) : (
+                  <FaArrowDown className="text-[10px]" />
+                )}
+                {Math.abs(trend)}%
               </span>
             </div>
 
             <div className="relative mt-5">
               <p className="text-sm font-medium text-gray-500">{item.title}</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1 tracking-tight">{item.amount}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1 tracking-tight">
+                {formattedValue}
+              </p>
             </div>
 
-            <p className="relative mt-3 text-xs text-gray-400">vs. last month</p>
+            <div className="relative mt-4 flex items-center justify-between">
+              <p className="text-xs text-gray-400">vs. last month</p>
+              <div className="h-1 w-16 rounded-full bg-gray-100 overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${item.bar}`}
+                  style={{ width: `${Math.min(Math.abs(trend) * 4, 100)}%` }}
+                />
+              </div>
+            </div>
           </div>
         );
       })}

@@ -6,6 +6,8 @@ import type { AppDispatch, RootState } from "../../store/store";
 import { getOrdersAction, updateOrderStatusAction } from "../../store/Users/order/orderAction";
 import { OrderStatusBadge } from "../../Components/OrderStatusBadge";
 import type { OrderStatus } from "../../Types/user/order/orderType";
+import { handleApiError } from "../../utils/handleApiError";
+import { toast } from "react-toastify";
 
 
 const STATUS_OPTIONS: OrderStatus[] = [
@@ -41,6 +43,7 @@ const OrderManagement = () => {
     try {
       await dispatch(updateOrderStatusAction(orderId, status));
     } catch (err) {
+      toast.error(handleApiError(err));
       setStatusError("Could not update order status. Please try again.");
     } finally {
       setUpdatingId(null);

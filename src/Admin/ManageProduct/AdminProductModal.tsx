@@ -4,6 +4,8 @@ import type { Product, PublishStatus } from "./AdminProduct";
 import type { Category } from "../../Components/CategorySelect ";
 import CategorySelect from "../../Components/CategorySelect ";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import { handleApiError } from "../../utils/handleApiError";
+import { toast } from "react-toastify";
 
 export interface ProductFormValues {
   name: string;
@@ -150,7 +152,7 @@ const AdminProductModal = ({
       console.log("Product saved successfully"); // Debug log
     } catch (error) {
       // Error handling is done in parent
-      console.error("Error saving product:", error);
+      toast.error(handleApiError(error));
     } finally {
       setIsSubmitting(false);
       console.log("isSubmitting set to false"); // Debug log
