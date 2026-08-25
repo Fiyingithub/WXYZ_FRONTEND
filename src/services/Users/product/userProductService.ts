@@ -14,6 +14,16 @@ export const userProductService = {
       throw error;
     }
   },
+  getAllActiveProduct: async () => {
+    try {
+      const res = await api.get('/product/active');
+      return res.data.data;
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || error?.message || String(error);
+      console.error('Get products error:', msg);
+      throw error;
+    }
+  },
 
   getById: async (id: string) => {
     try {

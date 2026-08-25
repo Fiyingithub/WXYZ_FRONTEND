@@ -1,75 +1,140 @@
-import { useState } from 'react';
-import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, Select, MenuItem, Typography, Box, FormControl, InputLabel
-} from '@mui/material';
+// components/TransactionsTable.tsx
+import { useState } from "react";
 
-const transactionsData = [
-  { date: '25 JULY 12:30', amount: '-₦10', name: 'YOUTUBE', method: 'VISA **3254', category: 'SUBSCRIPTION' },
-  { date: '26 JULY 15:00', amount: '-₦150', name: 'Reserved', method: 'Mastercard **2154', category: 'Shopping' },
-  { date: '25 JULY 9:00', amount: '-₦80', name: 'Yaposhika', method: 'Mastercard **2154', category: 'Cafe and Restaurants' },
-];
+interface Transaction {
+  id: string;
+  createdAt: string;
+  amount: number;
+  customer: {
+    email: string;
+  }
+  provider: string;
+  status: string;
+}
 
-const TransactionsTable = () => {
-  const [account, setAccount] = useState('All accounts');
-  const [view, setView] = useState('See all');
+interface TransactionsTableProps {
+  transactions: Transaction[];
+  loading: boolean;
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  SUCCESS: "bg-green-100 text-green-600",
+  FAILED: "bg-red-100 text-red-600",
+  PENDING: "bg-amber-100 text-amber-600",
+  PROCESSING: "bg-indigo-100 text-indigo-600",
+  CANCELLED: "bg-rose-100 text-rose-600",
+};
+
+const statusStyle = (category: string) =>
+  STATUS_STYLES[category] ?? "bg-gray-100 text-gray-600";
+
+const formatAmount = (amount: number) => {
+  const sign = amount < 0 ? "-" : "+";
+  return `${sign}₦${Math.abs(amount).toLocaleString()}`;
+};
+
+const formatDateAndTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true,
+  };
+  return date.toLocaleString("en-US", options);
+}
+
+const TransactionsTable = ({ transactions, loading }: TransactionsTableProps) => {
+  const [account, setAccount] = useState("All accounts");
 
   return (
-    <Box sx={{ bgcolor: 'white', p: 4, width: '100%', boxShadow: 3, borderRadius: 2, border: 1, borderColor: 'grey.200' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', fontStyle: 'italic' }}>Recent Transactions</Typography>
-        <Box sx={{ ml: 2, display: 'flex', gap: 2 }}>
-          <FormControl variant="outlined" size="small">
-            <InputLabel>Account</InputLabel>
-            <Select
-              value={account}
-              onChange={(e) => setAccount(e.target.value as string)}
-              label="Account"
-            >
-              <MenuItem value="All accounts">All accounts</MenuItem>
-              {/* Add more account options here if needed */}
-            </Select>
-          </FormControl>
+    <div className="bg-white rounded-[28px] ring-1 ring-black/5 shadow-[0_2px_20px_-4px_rgba(20,20,31,0.06)] p-6 w-full">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+          <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
+            Activity
+          </p>
+          <h2 className="text-xl font-bold text-gray-900 mt-0.5">
+            Recent Transactions
+          </h2>
+        </div>
 
-          <FormControl variant="outlined" size="small">
-            <InputLabel>View</InputLabel>
-            <Select
-              value={view}
-              onChange={(e) => setView(e.target.value as string)}
-              label="View"
-            >
-              <MenuItem value="See all">See all</MenuItem>
-              {/* Add more view options here if needed */}
-            </Select>
-          </FormControl>
-        </Box>
-      </Box>
+        <div className="flex items-center gap-2">
+          <select
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#f2592b]/30"
+            value={account}
+            onChange={(e) => setAccount(e.target.value)}
+          >
+            <option value="All accounts">All accounts</option>
+          </select>
+          <button className="text-sm font-semibold text-[#f2592b] hover:underline px-2">
+            See all
+          </button>
+        </div>
+      </div>
 
-      <TableContainer component={Paper} elevation={3}>
-        <Table sx={{ minWidth: 500 }} aria-label="transactions table">
-          <TableHead>
-            <TableRow sx={{ bgcolor: 'red.300' }}>
-              <TableCell>Date</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Payment Name</TableCell>
-              <TableCell>Method</TableCell>
-              <TableCell>Category</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {transactionsData.map((transaction, index) => (
-              <TableRow key={index}>
-                <TableCell>{transaction.date}</TableCell>
-                <TableCell>{transaction.amount}</TableCell>
-                <TableCell>{transaction.name}</TableCell>
-                <TableCell>{transaction.method}</TableCell>
-                <TableCell>{transaction.category}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide border-b border-gray-100">
+              <th className="py-3 pr-4 font-semibold">Date</th>
+              <th className="py-3 pr-4 font-semibold">Amount</th>
+              <th className="py-3 pr-4 font-semibold">Payment Method</th>
+              <th className="py-3 pr-4 font-semibold">Method</th>
+              <th className="py-3 pr-4 font-semibold">Payment Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <tr key={i} className="border-b border-gray-50 animate-pulse">
+                  <td colSpan={5} className="py-4">
+                    <div className="h-4 bg-gray-100 rounded w-full" />
+                  </td>
+                </tr>
+              ))
+            ) : transactions.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-10 text-center text-gray-400">
+                  No transactions to show yet.
+                </td>
+              </tr>
+            ) : (
+              transactions.map((t) => (
+                <tr
+                  key={t.id}
+                  className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors"
+                >
+                  <td className="py-3.5 pr-4 text-gray-500">{formatDateAndTime(t.createdAt)}</td>
+                  <td
+                    className={`py-3.5 pr-4 font-semibold ${
+                      t.amount < 0 ? "text-rose-600" : "text-emerald-600"
+                    }`}
+                  >
+                    {formatAmount(t.amount)}
+                  </td>
+                  <td className="py-3.5 pr-4 font-medium text-gray-800">
+                    {t?.customer?.email}
+                  </td>
+                  <td className="py-3.5 pr-4 text-gray-500">{t.provider}</td>
+                  <td className="py-3.5 pr-4">
+                    <span
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusStyle(
+                        t.status,
+                      )}`}
+                    >
+                      {t.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 };
 

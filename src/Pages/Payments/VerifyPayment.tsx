@@ -5,11 +5,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../../Context/Auth/useAuth';
 import { userPaymentService } from '../../services/Users/payment/userPaymentService';
+import { useDispatch } from 'react-redux';
+import type { AppDispatch } from '../../store/store';
+import { getCartAction } from '../../store/Users/cart/cartAction';
 // import { PaymentService } from '../services/paymentService';
 // import { useAuth } from '../context/auth/useAuth';
 
 const VerifyPayment = () => {
   const { user } = useAuth();
+  const dispatch = useDispatch<AppDispatch>();
   const [status, setStatus] = useState('verifying');
   const [message, setMessage] = useState('');
   const location = useLocation();
@@ -19,34 +23,36 @@ const VerifyPayment = () => {
   const reference = getQuery().get('reference');
 
   useEffect(() => {
-    const verifyPayment = async () => {
-      try {
-        const response = await userPaymentService.verify(reference!); 
-        setStatus('success');
-        setMessage(response?.data?.message || "Payment verified successfully.");
-
-        // Only navigate if user is already loaded
-        if (user) {
-          setTimeout(() => navigate(`/`), 2000);
-        }
-      } catch (err: any) {
-        console.log(err)
-        setStatus('error');
-        if (err.response?.status === 403) {
-          setMessage(err.response?.data)
-        } else {
-          setMessage(err.response?.data?.message || 'Payment verification failed.');
-        }
-      }
-    };
-
-    if (reference) {
-      verifyPayment();
-    } else {
+  const verifyPayment = async () => {
+    try {
+      const response = await userPaymentService.verify(reference!);
+      setStatus('success');
+      setMessage(response?.data?.message || "Payment verified successfully.");
+      dispatch(getCartAction()); // refresh cart as soon as we know it succeeded
+    } catch (err: any) {
       setStatus('error');
-      setMessage('Invalid or missing payment reference.');
+      if (err.response?.status === 403) {
+        setMessage(err.response?.data);
+      } else {
+        setMessage(err.response?.data?.message || 'Payment verification failed.');
+      }
     }
-  }, []);
+  };
+
+  if (reference) {
+    verifyPayment();
+  } else {
+    setStatus('error');
+    setMessage('Invalid or missing payment reference.');
+  }
+}, []);
+
+useEffect(() => {
+  if (status === 'success' && user) {
+    setMessage('Redirecting to dashboard...');
+    setTimeout(() => navigate(`/`), 2000);
+  }
+}, [status, user]);
 
   useEffect(() => {
     if (status === 'success' && user) {

@@ -95,7 +95,7 @@ export const CartPage: React.FC = () => {
 
       dispatch(getCartAction());
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       setNotification({
         open: true,
         type: "ERROR",
@@ -126,7 +126,7 @@ export const CartPage: React.FC = () => {
 
       dispatch(getCartAction());
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       setNotification({
         open: true,
         type: "ERROR",

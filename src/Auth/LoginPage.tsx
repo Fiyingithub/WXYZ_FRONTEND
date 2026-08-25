@@ -7,6 +7,8 @@ import loginImage from "../Asset/images/loginImage.jpg";
 import logo from "../Asset/images/wxyz_logo.svg";
 import { authService } from "../services/Admin/authService";
 import { useAuth } from "../Context/Auth/useAuth";
+import { toast } from "react-toastify";
+import { handleApiError } from "../utils/handleApiError";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -83,7 +85,7 @@ const LoginPage = () => {
       // navigate("/admin/dashboard");
       stopWaitingLoader();
     } catch (err: any) {
-      console.log(err.response.data);
+      toast.error(handleApiError(err));
       stopWaitingLoader();
       notifyError(err.response.data.responseMessage);
     }
