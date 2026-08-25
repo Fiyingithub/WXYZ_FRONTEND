@@ -1,6 +1,11 @@
 // src/Services/Auth/onboarding.js
 
-import api from "../api";
+import axios from 'axios'
+
+const api = axios.create({
+  baseURL: "https://wxyz-backend.onrender.com/api",
+  withCredentials: true, // Important: sends refreshToken cookie
+});
 
 export const authService = {
 
