@@ -14,6 +14,7 @@ interface EditDetailsFormProps {
 type Phase = "idle" | "saving" | "refetching";
 
 export const EditDetailsForm: React.FC<EditDetailsFormProps> = ({ user, onSaved }) => {
+  console.log("USER IN FORM", user);
   const [form, setForm] = useState<UpdateProfileInput>({
     username: user.username ?? "",
     name: user.name ?? "",
@@ -39,7 +40,7 @@ export const EditDetailsForm: React.FC<EditDetailsFormProps> = ({ user, onSaved 
       setPhase("saving");
       // STUB: request/response shape not confirmed yet — will 404 until
       // userProfileService.updateProfile is wired to the real endpoint.
-      await authService.update(user.id, form);
+      await authService.update(user?.id, form);
 
       setPhase("refetching");
       const freshUser = await authService.getById(user.id);
